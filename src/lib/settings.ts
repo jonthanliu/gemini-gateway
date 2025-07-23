@@ -1,4 +1,4 @@
-import { db } from "db";
+import { db } from "#db";
 import type { InferSelectModel } from "drizzle-orm";
 import { settings as settingsTable } from "./db/schema";
 import logger from "./logger";

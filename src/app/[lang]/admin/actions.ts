@@ -1,5 +1,6 @@
 "use server";
 
+import { db } from "#db";
 import { hashToken } from "@/lib/crypto";
 import {
   apiKeys,
@@ -16,7 +17,6 @@ import {
   resetSettings,
   updateSetting as updateSettingInDb,
 } from "@/lib/settings";
-import { db } from "db";
 import {
   and,
   count,

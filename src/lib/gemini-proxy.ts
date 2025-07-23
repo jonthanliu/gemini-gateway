@@ -1,8 +1,13 @@
-import { getNextWorkingKey, resetKeyFailureCount, handleApiFailure } from "@/lib/services/key.service";
+import { db } from "#db";
+import {
+  getNextWorkingKey,
+  handleApiFailure,
+  resetKeyFailureCount,
+} from "@/lib/services/key.service";
 import { Agent } from "http";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "./db";
+import { errorLogs, requestLogs } from "./db/schema";
 import {
   buildGeminiRequest,
   formatGoogleModelsToOpenAI,
@@ -121,13 +126,11 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       const errorBody = await geminiResponse.json();
       const errorMessage = errorBody.error?.message || "Unknown error";
 
-      await prisma.errorLog.create({
-        data: {
-          apiKey: apiKey,
-          errorType: "gemini_api_error",
-          errorMessage: errorMessage,
-          errorDetails: JSON.stringify(errorBody),
-        },
+      await db.insert(errorLogs).values({
+        apiKey: apiKey,
+        errorType: "gemini_api_error",
+        errorMessage: errorMessage,
+        errorDetails: JSON.stringify(errorBody),
       });
 
       logger.error(
@@ -207,14 +210,12 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   } finally {
     if (statusCode) {
       const latency = Date.now() - startTime;
-      await prisma.requestLog.create({
-        data: {
-          apiKey: apiKey,
-          model: model,
-          statusCode: statusCode,
-          isSuccess: isSuccess,
-          latency: latency,
-        },
+      await db.insert(requestLogs).values({
+        apiKey: apiKey,
+        model: model,
+        statusCode: statusCode,
+        isSuccess: isSuccess,
+        latency: latency,
       });
     }
   }

@@ -17,7 +17,7 @@ type ApiKeyDetail = {
   key: string;
   enabled: boolean;
   failCount: number;
-  createdAt: Date;
+  createdAt: Date | null;
   lastUsed: Date | null;
 };
 

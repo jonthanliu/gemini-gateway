@@ -12,11 +12,11 @@
         "test": "vitest",
         "db:generate": "drizzle-kit generate"
     },
-    "exports": {
-        "./db": {
+    "imports": {
+        "#db": {
             "import": {
-                "types": "./src/lib/db.postgres.ts",
-                "default": "./src/lib/db.postgres.ts"
+                "types": "./src/lib/db.sqlite.ts",
+                "default": "./src/lib/db.sqlite.ts"
             },
             "require": {
                 "types": "./src/lib/db.sqlite.ts",
@@ -65,6 +65,7 @@
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "@vitejs/plugin-react": "^4.7.0",
+        "autoprefixer": "^10.4.21",
         "drizzle-kit": "^0.31.4",
         "eslint": "^9",
         "eslint-config-next": "15.3.5",
@@ -72,6 +73,7 @@
         "jsdom": "^23.2.0",
         "lint-staged": "^16.1.2",
         "pino-pretty": "^13.0.0",
+        "postcss": "^8.5.6",
         "tailwindcss": "^4",
         "tsx": "^4.20.3",
         "typescript": "^5",

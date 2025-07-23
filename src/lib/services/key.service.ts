@@ -1,7 +1,7 @@
+import { db } from "#db";
 import { apiKeys } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import { getSettings } from "@/lib/settings";
-import { db } from "db";
 import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, eq, gte, lt } from "drizzle-orm";
 
@@ -57,12 +57,13 @@ export async function handleApiFailure(key: string): Promise<void> {
       .where(eq(apiKeys.key, key));
 
     if (currentKeyResult.length > 0) {
-      const currentKey = currentKeyResult;
+      const currentKey = currentKeyResult[0];
       await db
         .update(apiKeys)
         .set({
-          failCount: currentKey[0].failCount + 1,
+          failCount: currentKey.failCount + 1,
           lastChecked: new Date(),
+          lastFailedAt: new Date(),
         })
         .where(eq(apiKeys.key, key));
     }
@@ -118,6 +119,7 @@ export async function getAllKeys(): Promise<
     isWorking: boolean;
     lastUsed: Date | null;
     lastChecked: Date | null;
+    lastFailedAt: Date | null;
   }[]
 > {
   const settings = await getSettings();
@@ -133,6 +135,7 @@ export async function getAllKeys(): Promise<
     isWorking: apiKey.enabled && apiKey.failCount < maxFailures,
     lastUsed: apiKey.lastUsed,
     lastChecked: apiKey.lastChecked,
+    lastFailedAt: apiKey.lastFailedAt,
   }));
 }
 

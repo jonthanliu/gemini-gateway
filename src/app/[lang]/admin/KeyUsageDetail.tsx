@@ -16,7 +16,7 @@ type Log = {
   model: string;
   statusCode: number;
   isSuccess: boolean;
-  createdAt: Date;
+  createdAt: Date | null;
 };
 
 type Details = {
@@ -106,7 +106,9 @@ export function KeyUsageDetail({ apiKey, dictionary }: KeyUsageDetailProps) {
             ) : (
               details.logs.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell>{log.createdAt.toLocaleString()}</TableCell>
+                  <TableCell>
+                    {log.createdAt?.toLocaleString() ?? "N/A"}
+                  </TableCell>
                   <TableCell>{log.model}</TableCell>
                   <TableCell>
                     {log.isSuccess ? (
