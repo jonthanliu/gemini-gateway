@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
-import { getKeyManager } from "@/lib/key-manager";
 import { getSettings } from "@/lib/settings";
+import { getNextWorkingKey, handleApiFailure, resetKeyFailureCount } from "@/lib/services/key.service";
 import {
   EnhancedGenerateContentResponse,
   GenerateContentRequest,
@@ -49,12 +49,11 @@ export async function callGeminiApi({
   model,
   request,
 }: GeminiClientRequest): Promise<Response> {
-  const keyManager = await getKeyManager();
   const { MAX_FAILURES } = await getSettings();
   let lastError: unknown = null;
 
   for (let i = 0; i < MAX_FAILURES; i++) {
-    const apiKey = keyManager.getNextWorkingKey();
+    const apiKey = await getNextWorkingKey();
     const startTime = Date.now();
 
     try {
@@ -74,7 +73,7 @@ export async function callGeminiApi({
           latency,
         },
       });
-      keyManager.resetKeyFailureCount(apiKey);
+      await resetKeyFailureCount(apiKey);
 
       return new Response(stream, {
         headers: {
@@ -117,7 +116,7 @@ export async function callGeminiApi({
       });
 
       if (statusCode >= 400 && statusCode < 500) {
-        keyManager.handleApiFailure(apiKey);
+        await handleApiFailure(apiKey);
         // Also increment the failCount in the database
         await prisma.apiKey.update({
           where: { key: apiKey },

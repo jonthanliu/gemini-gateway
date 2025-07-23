@@ -1,4 +1,4 @@
-import { getKeyManager } from "@/lib/key-manager";
+import { checkAndReactivateKeys } from "@/lib/services/key.service";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -12,8 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const keyManager = await getKeyManager();
-    await keyManager.checkAndReactivateKeys();
+    await checkAndReactivateKeys();
     return NextResponse.json({
       status: "ok",
       message: "Key health check completed.",

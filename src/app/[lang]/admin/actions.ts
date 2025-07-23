@@ -3,7 +3,8 @@
 import { prisma } from "@/lib/db";
 import { getDictionary } from "@/lib/get-dictionary";
 import { getLocale } from "@/lib/get-locale";
-import { getKeyManager, resetKeyManager } from "@/lib/key-manager";
+import { resetKeyManager } from "@/lib/key-manager";
+import { resetKeyFailureCount, verifyKey } from "@/lib/services/key.service";
 import { ParsedSettings, resetSettings } from "@/lib/settings";
 import bcrypt from "bcrypt";
 import { revalidatePath } from "next/cache";
@@ -117,8 +118,7 @@ export async function resetKeysFailures(keys: string[]) {
     return { error: t.error.noKeysForReset };
   }
   try {
-    const keyManager = await getKeyManager();
-    keys.forEach((key) => keyManager.resetKeyFailureCount(key));
+    await Promise.all(keys.map(key => resetKeyFailureCount(key)));
     revalidatePath("/admin");
     return {
       success: t.success.reset.replace("{count}", keys.length.toString()),
@@ -137,10 +137,9 @@ export async function verifyApiKeys(keys: string[]) {
     return { error: t.error.noKeysForVerification };
   }
   try {
-    const keyManager = await getKeyManager();
     const results = await Promise.all(
       keys.map(async (key) => {
-        const success = await keyManager.verifyKey(key);
+        const success = await verifyKey(key);
         return { key, success };
       })
     );

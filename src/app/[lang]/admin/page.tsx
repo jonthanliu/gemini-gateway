@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Locale } from "@/i18n-config";
 import { getDictionary } from "@/lib/get-dictionary";
-import { getKeyManager } from "@/lib/key-manager";
+import { getAllKeys } from "@/lib/services/key.service";
 import { getKeyStats, getSystemStats } from "./actions";
 import { AddKeyDialog } from "./AddKeyDialog";
 import { DashboardStats } from "./DashboardStats";
@@ -24,13 +24,11 @@ export default async function AdminPage({
   const dictionary = await getDictionary(lang);
 
   // Fetch all data in parallel
-  const [keyManager, keyStats, systemStats] = await Promise.all([
-    getKeyManager(),
+  const [keys, keyStats, systemStats] = await Promise.all([
+    getAllKeys(),
     getKeyStats(),
     getSystemStats(),
   ]);
-
-  const keys = keyManager.getAllKeys();
 
   // Handle potential errors from stats fetching
   const safeKeyStats = {

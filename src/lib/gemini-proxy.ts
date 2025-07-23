@@ -1,4 +1,4 @@
-import { getKeyManager } from "@/lib/key-manager";
+import { getNextWorkingKey, resetKeyFailureCount, handleApiFailure } from "@/lib/services/key.service";
 import { Agent } from "http";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { NextRequest, NextResponse } from "next/server";
@@ -70,8 +70,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   let isSuccess = false;
 
   try {
-    const keyManager = await getKeyManager();
-    apiKey = keyManager.getNextWorkingKey();
+    apiKey = await getNextWorkingKey();
 
     // Reconstruct the original Gemini API URL
     const url = new URL(request.url);
@@ -118,7 +117,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Check if the response from Gemini is not OK
     if (!geminiResponse.ok) {
       statusCode = geminiResponse.status;
-      keyManager.handleApiFailure(apiKey);
+      await handleApiFailure(apiKey);
       const errorBody = await geminiResponse.json();
       const errorMessage = errorBody.error?.message || "Unknown error";
 
@@ -145,6 +144,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Success
     isSuccess = true;
     statusCode = geminiResponse.status;
+    await resetKeyFailureCount(apiKey);
 
     // Otherwise, we return the JSON response directly.
     const data = await geminiResponse.json();
