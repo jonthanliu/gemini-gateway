@@ -3,12 +3,12 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
+        "prepare": "husky",
         "dev": "next dev | pino-pretty",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "db:migrate": "prisma migrate dev",
-        "postinstall": "prisma generate",
+        "db:migrate": "drizzle-kit migrate",
         "test": "vitest",
         "db:generate": "drizzle-kit generate"
     },
