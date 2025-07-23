@@ -117,6 +117,7 @@ describe("Key Service", () => {
       expect(setMockUpdate).toHaveBeenCalledWith({
         failCount: 2,
         lastChecked: expect.any(Date),
+        lastFailedAt: expect.any(Date),
       });
       expect(whereMockUpdate).toHaveBeenCalledWith(eq(apiKeys.key, "key1"));
     });

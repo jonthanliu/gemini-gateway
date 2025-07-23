@@ -1,4 +1,4 @@
-import { db } from "#db";
+import { db } from "@/lib/db.sqlite";
 import { apiKeys, errorLogs, requestLogs } from "@/lib/db/schema";
 import {
   getNextWorkingKey,

@@ -12,18 +12,6 @@
         "test": "vitest",
         "db:generate": "drizzle-kit generate"
     },
-    "imports": {
-        "#db": {
-            "import": {
-                "types": "./src/lib/db.sqlite.ts",
-                "default": "./src/lib/db.sqlite.ts"
-            },
-            "require": {
-                "types": "./src/lib/db.sqlite.ts",
-                "default": "./src/lib/db.sqlite.ts"
-            }
-        }
-    },
     "dependencies": {
         "@formatjs/intl-localematcher": "^0.6.1",
         "@google/generative-ai": "^0.24.1",
@@ -36,9 +24,7 @@
         "@radix-ui/react-slot": "^1.2.3",
         "@radix-ui/react-switch": "^1.2.5",
         "@radix-ui/react-tabs": "^1.1.12",
-        "@types/better-sqlite3": "^7.6.13",
-        "@types/pg": "^8.15.4",
-        "better-sqlite3": "^12.2.0",
+        "@libsql/client": "^0.7.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
@@ -48,7 +34,6 @@
         "lucide-react": "^0.525.0",
         "negotiator": "^1.0.0",
         "next": "15.3.5",
-        "pg": "^8.16.3",
         "pino": "^9.7.0",
         "react": "^19.0.0",
         "react-day-picker": "^9.8.0",

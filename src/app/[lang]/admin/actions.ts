@@ -1,7 +1,7 @@
 "use server";
 
-import { db } from "#db";
 import { hashToken } from "@/lib/crypto";
+import { db } from "@/lib/db.sqlite";
 import {
   apiKeys,
   errorLogs,

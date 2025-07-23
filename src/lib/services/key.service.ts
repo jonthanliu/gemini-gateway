@@ -1,4 +1,4 @@
-import { db } from "#db";
+import { db } from "@/lib/db.sqlite";
 import { apiKeys } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import { getSettings } from "@/lib/settings";
