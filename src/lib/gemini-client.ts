@@ -1,11 +1,17 @@
-import { prisma } from "@/lib/db";
-import { getKeyManager } from "@/lib/key-manager";
+import { db } from "@/lib/db.sqlite";
+import { apiKeys, errorLogs, requestLogs } from "@/lib/db/schema";
+import {
+  getNextWorkingKey,
+  handleApiFailure,
+  resetKeyFailureCount,
+} from "@/lib/services/key.service";
 import { getSettings } from "@/lib/settings";
 import {
   EnhancedGenerateContentResponse,
   GenerateContentRequest,
   GoogleGenerativeAI,
 } from "@google/generative-ai";
+import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export interface GeminiClientRequest {
@@ -49,12 +55,11 @@ export async function callGeminiApi({
   model,
   request,
 }: GeminiClientRequest): Promise<Response> {
-  const keyManager = await getKeyManager();
   const { MAX_FAILURES } = await getSettings();
   let lastError: unknown = null;
 
   for (let i = 0; i < MAX_FAILURES; i++) {
-    const apiKey = keyManager.getNextWorkingKey();
+    const apiKey = await getNextWorkingKey();
     const startTime = Date.now();
 
     try {
@@ -65,16 +70,14 @@ export async function callGeminiApi({
       const stream = sdkStreamToReadableStream(result.stream);
 
       const latency = Date.now() - startTime;
-      await prisma.requestLog.create({
-        data: {
-          apiKey: apiKey.slice(-4),
-          model,
-          statusCode: 200, // Success
-          isSuccess: true,
-          latency,
-        },
+      await db.insert(requestLogs).values({
+        apiKey: apiKey.slice(-4),
+        model,
+        statusCode: 200, // Success
+        isSuccess: true,
+        latency,
       });
-      keyManager.resetKeyFailureCount(apiKey);
+      await resetKeyFailureCount(apiKey);
 
       return new Response(stream, {
         headers: {
@@ -98,41 +101,35 @@ export async function callGeminiApi({
         statusCode = error.httpStatus;
       }
 
-      await prisma.requestLog.create({
-        data: {
-          apiKey: apiKey.slice(-4),
-          model,
-          statusCode,
-          isSuccess: false,
-          latency,
-        },
+      await db.insert(requestLogs).values({
+        apiKey: apiKey.slice(-4),
+        model,
+        statusCode,
+        isSuccess: false,
+        latency,
       });
-      await prisma.errorLog.create({
-        data: {
-          apiKey: apiKey.slice(-4),
-          errorType: `SDK Error (Attempt ${i + 1})`,
-          errorMessage,
-          errorDetails: JSON.stringify(error),
-        },
+      await db.insert(errorLogs).values({
+        apiKey: apiKey.slice(-4),
+        errorType: `SDK Error (Attempt ${i + 1})`,
+        errorMessage,
+        errorDetails: JSON.stringify(error),
       });
 
       if (statusCode >= 400 && statusCode < 500) {
-        keyManager.handleApiFailure(apiKey);
+        await handleApiFailure(apiKey);
         // Also increment the failCount in the database
-        await prisma.apiKey.update({
-          where: { key: apiKey },
-          data: { failCount: { increment: 1 } },
-        });
+        await db
+          .update(apiKeys)
+          .set({ failCount: sql`${apiKeys.failCount} + 1` })
+          .where(eq(apiKeys.key, apiKey));
       }
     }
   }
 
-  await prisma.errorLog.create({
-    data: {
-      errorType: "General Error",
-      errorMessage: "All API keys failed or the service is unavailable.",
-      errorDetails: JSON.stringify(lastError),
-    },
+  await db.insert(errorLogs).values({
+    errorType: "General Error",
+    errorMessage: "All API keys failed or the service is unavailable.",
+    errorDetails: JSON.stringify(lastError),
   });
 
   return NextResponse.json(

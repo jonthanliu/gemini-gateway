@@ -35,7 +35,7 @@ import { clearAllLogs, deleteLogs } from "./actions";
 // Types remain the same
 type RequestLog = {
   id: number;
-  createdAt: Date;
+  createdAt: Date | null;
   apiKey: string;
   model: string;
   statusCode: number;
@@ -44,7 +44,7 @@ type RequestLog = {
 
 type ErrorLog = {
   id: number;
-  createdAt: Date;
+  createdAt: Date | null;
   apiKey: string | null;
   errorType: string;
   errorMessage: string;
@@ -360,7 +360,9 @@ export function LogViewer({
                   />
                 </TableCell>
                 <TableCell>
-                  {new Date(log.createdAt).toLocaleString()}
+                  {log.createdAt
+                    ? new Date(log.createdAt).toLocaleString()
+                    : "N/A"}
                 </TableCell>
                 {renderLogCells(log)}
                 <TableCell className="text-right">

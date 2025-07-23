@@ -18,7 +18,7 @@ type Log = {
   model: string;
   statusCode: number;
   isSuccess: boolean;
-  createdAt: Date;
+  createdAt: Date | null;
 };
 
 type Stats = {
@@ -98,7 +98,9 @@ export function ApiCallStatsDetail({
             ) : (
               logs.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell>{log.createdAt.toLocaleTimeString()}</TableCell>
+                  <TableCell>
+                    {log.createdAt?.toLocaleTimeString() ?? "N/A"}
+                  </TableCell>
                   <TableCell>...{log.apiKey.slice(-4)}</TableCell>
                   <TableCell>{log.model}</TableCell>
                   <TableCell>

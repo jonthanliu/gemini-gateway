@@ -7,9 +7,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - GOOGLE_API_HOST=${GOOGLE_API_HOST}
-      - DATABASE_URL=file:/app/data/dev.db
+    env_file:
+      - .env
     volumes:
       # Mount a data volume to persist the SQLite database
       - ./data:/app/data

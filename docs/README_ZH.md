@@ -32,8 +32,8 @@ You can read this document in [English](README.md).
 
 为了更好地理解本项目，我们建议按以下顺序探索文件：
 
-1.  **`prisma/schema.prisma`**: 定义了数据库结构，用于存储 API 密钥 (`ApiKey`) 和动态配置 (`Setting`)。
-2.  **`src/lib/settings.ts`**: 负责从数据库中获取和缓存所有应用配置的服务。这是所有配置的“单一真实来源”。
+1.  **`src/lib/db/schema.ts`**: 使用 Drizzle ORM 定义了数据库结构，用于存储 API 密钥 (`ApiKey`)、动态配置 (`Setting`)、请求日志 (`RequestLog`) 和错误日志 (`ErrorLog`)。
+2.  **`src/lib/settings.ts`**: 负责从数据库中获取所有应用配置的服务。这是所有配置的“单一真实来源”。
 3.  **`src/lib/key-manager.ts`**: `KeyManager` 类，负责所有 API 密钥的管理。它**只从数据库**加载密钥，处理轮换和失败跟踪。
 4.  **`src/middleware.ts`**: 所有请求的入口。它使用 `settings.ts` 在每个请求中动态获取认证令牌。
 5.  **`src/app/admin`**: 管理后台的代码，包括 UI 组件（如 `KeyTable.tsx`, `ConfigForm.tsx`）和包含所有管理逻辑的 `actions.ts` 文件。
@@ -64,19 +64,23 @@ You can read this document in [English](README.md).
 pnpm install
 ```
 
-### 3. 初始化数据库
+### 2. 初始化数据库
 
-本项目使用 Prisma 进行数据库管理。运行 `pnpm run db:migrate` 命令来创建您的第一个迁移并初始化数据库。
+本项目使用 Drizzle ORM 进行数据库管理。运行以下命令来创建 SQLite 数据库并应用 schema。
 
-这将在 `prisma/` 目录下创建一个 `dev.db` 文件。
+```bash
+pnpm db:migrate
+```
+
+这将在项目根目录创建一个 `local.db` 文件。
 
 ### 4. 配置环境变量
 
 创建一个 `.env.local` 文件。应用需要以下变量来连接数据库。
 
-- **`DATABASE_URL`**: 您的数据库连接字符串。默认的 `pnpm prisma migrate dev` 命令会在 `prisma/dev.db` 创建一个 SQLite 数据库。
+- **`DATABASE_URL`**: 您的数据库连接字符串。默认的 `pnpm db:migrate` 命令会在项目根目录创建一个 `local.db` 文件。
   ```
-  DATABASE_URL="file:./prisma/dev.db"
+  DATABASE_URL="file:./local.db"
   ```
 
 仅当您需要为 Google API 使用代理时，您才可能需要设置 `GOOGLE_API_HOST`。所有其他设置都通过 Web UI 进行管理。
@@ -176,7 +180,7 @@ pnpm dev
 
 - **动态配置**: 应用被设计为在运行时通过 Web UI 进行配置。Docker 镜像本身是通用的，不包含任何秘密信息。
 - **数据持久化**: `docker-compose.yml` 文件已配置为将本地的 `./data` 目录挂载到容器内的 `/app/data` 目录。这确保了您的 SQLite 数据库（以及所有配置）在容器重启后依然存在。
-- **自动迁移**: `entrypoint.sh` 脚本会在每次容器启动时自动运行数据库迁移命令 (`prisma migrate deploy`)，确保您的数据库结构始终是最新版本。
+- **自动迁移**: `entrypoint.sh` 脚本会在每次容器启动时自动运行数据库迁移命令 (`pnpm db:migrate`)，确保您的数据库结构始终是最新版本。
 
 ### 使用 Docker Compose 运行
 

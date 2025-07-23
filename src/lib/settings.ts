@@ -1,4 +1,6 @@
-import { prisma } from "./db";
+import { db } from "@/lib/db.sqlite";
+import type { InferSelectModel } from "drizzle-orm";
+import { settings as settingsTable } from "./db/schema";
 import logger from "./logger";
 
 // 定义默认配置
@@ -40,9 +42,12 @@ type Settings = typeof defaultSettings;
  */
 export async function getSettings(): Promise<ParsedSettings> {
   let settingsMap = new Map<string, string>();
+  type SettingSelect = InferSelectModel<typeof settingsTable>;
   try {
-    const settingsFromDb = await prisma.setting.findMany();
-    settingsMap = new Map(settingsFromDb.map((s) => [s.key, s.value]));
+    const settingsFromDb = await db.select().from(settingsTable);
+    settingsMap = new Map(
+      settingsFromDb.map((s: SettingSelect) => [s.key, s.value])
+    );
   } catch (error) {
     // This can happen on the first run if the database is not yet migrated.
     // We can safely ignore it and proceed with defaults.
@@ -98,10 +103,9 @@ export function resetSettings(): void {
  * @param value - 配置项的值
  */
 export async function updateSetting(key: string, value: string) {
-  await prisma.setting.upsert({
-    where: { key },
-    update: { value },
-    create: { key, value },
+  await db.insert(settingsTable).values({ key, value }).onConflictDoUpdate({
+    target: settingsTable.key,
+    set: { value },
   });
   // No need to call resetSettings() as the cache has been removed.
 }

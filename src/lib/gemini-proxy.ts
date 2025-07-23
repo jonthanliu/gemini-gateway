@@ -1,8 +1,13 @@
-import { getKeyManager } from "@/lib/key-manager";
+import { db } from "@/lib/db.sqlite";
+import {
+  getNextWorkingKey,
+  handleApiFailure,
+  resetKeyFailureCount,
+} from "@/lib/services/key.service";
 import { Agent } from "http";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "./db";
+import { errorLogs, requestLogs } from "./db/schema";
 import {
   buildGeminiRequest,
   formatGoogleModelsToOpenAI,
@@ -70,8 +75,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   let isSuccess = false;
 
   try {
-    const keyManager = await getKeyManager();
-    apiKey = keyManager.getNextWorkingKey();
+    apiKey = await getNextWorkingKey();
 
     // Reconstruct the original Gemini API URL
     const url = new URL(request.url);
@@ -118,17 +122,15 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Check if the response from Gemini is not OK
     if (!geminiResponse.ok) {
       statusCode = geminiResponse.status;
-      keyManager.handleApiFailure(apiKey);
+      await handleApiFailure(apiKey);
       const errorBody = await geminiResponse.json();
       const errorMessage = errorBody.error?.message || "Unknown error";
 
-      await prisma.errorLog.create({
-        data: {
-          apiKey: apiKey,
-          errorType: "gemini_api_error",
-          errorMessage: errorMessage,
-          errorDetails: JSON.stringify(errorBody),
-        },
+      await db.insert(errorLogs).values({
+        apiKey: apiKey,
+        errorType: "gemini_api_error",
+        errorMessage: errorMessage,
+        errorDetails: JSON.stringify(errorBody),
       });
 
       logger.error(
@@ -145,6 +147,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Success
     isSuccess = true;
     statusCode = geminiResponse.status;
+    await resetKeyFailureCount(apiKey);
 
     // Otherwise, we return the JSON response directly.
     const data = await geminiResponse.json();
@@ -207,14 +210,12 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   } finally {
     if (statusCode) {
       const latency = Date.now() - startTime;
-      await prisma.requestLog.create({
-        data: {
-          apiKey: apiKey,
-          model: model,
-          statusCode: statusCode,
-          isSuccess: isSuccess,
-          latency: latency,
-        },
+      await db.insert(requestLogs).values({
+        apiKey: apiKey,
+        model: model,
+        statusCode: statusCode,
+        isSuccess: isSuccess,
+        latency: latency,
       });
     }
   }

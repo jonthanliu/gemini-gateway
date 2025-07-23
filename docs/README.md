@@ -32,8 +32,8 @@ This version goes beyond a simple proxy, offering a robust feature set including
 
 To understand the project, we recommend exploring the files in the following order:
 
-1.  **`prisma/schema.prisma`**: Defines the database schema for storing API keys (`ApiKey`) and dynamic configurations (`Setting`).
-2.  **`src/lib/settings.ts`**: The service responsible for fetching and caching all application settings from the database. This is the single source of truth for configuration.
+1.  **`src/lib/db/schema.ts`**: Defines the database schema using Drizzle ORM for storing API keys (`ApiKey`), dynamic configurations (`Setting`), request logs (`RequestLog`), and error logs (`ErrorLog`).
+2.  **`src/lib/settings.ts`**: The service responsible for fetching all application settings from the database. This is the single source of truth for configuration.
 3.  **`src/lib/key-manager.ts`**: The `KeyManager` class, responsible for all API key management. It loads keys **exclusively from the database**, handles rotation, and tracks failures.
 4.  **`src/middleware.ts`**: The entry point for all incoming requests. It uses `settings.ts` to fetch authentication tokens dynamically for every request.
 5.  **`src/app/admin`**: The code for the admin dashboard, including the UI components (`KeyTable.tsx`, `ConfigForm.tsx`, etc.) and the `actions.ts` file containing all server-side logic for management.
@@ -53,21 +53,21 @@ pnpm install
 
 ### 2. Initialize the Database
 
-This project uses Prisma for database management. Run the following command to create the SQLite database and apply the schema.
+This project uses Drizzle ORM for database management. Run the following command to create the SQLite database and apply the schema.
 
 ```bash
-pnpm prisma migrate dev
+pnpm db:migrate
 ```
 
-This will create a `prisma/dev.db` file.
+This will create a `local.db` file.
 
 ### 3. Configure Environment Variables
 
 Create a `.env.local` file. The following variable is required for the application to connect to the database.
 
-- **`DATABASE_URL`**: The connection string for your database. The default `pnpm prisma migrate dev` command will create a SQLite database at `prisma/dev.db`.
+- **`DATABASE_URL`**: The connection string for your database. The default `pnpm db:migrate` command will create a SQLite database at `local.db`.
   ```
-  DATABASE_URL="file:./prisma/dev.db"
+  DATABASE_URL="file:./local.db"
   ```
 
 You might also set `GOOGLE_API_HOST` if you need to use a proxy for the Google API. All other settings are managed via the Web UI.
@@ -158,7 +158,7 @@ This project is a **stateful application** that requires a persistent database. 
 
 - **Dynamic Configuration**: The application is designed to be configured at runtime via the Web UI. The Docker image is generic and does not contain any secrets.
 - **Persistent Data**: The `docker-compose.yml` file is configured to mount a local `./data` directory to `/app/data` inside the container. This ensures that your SQLite database (and all your settings) persists across container restarts.
-- **Automated Migrations**: An `entrypoint.sh` script automatically runs database migrations (`prisma migrate deploy`) every time the container starts, ensuring your schema is always up-to-date.
+- **Automated Migrations**: An `entrypoint.sh` script automatically runs database migrations (`pnpm db:migrate`) every time the container starts, ensuring your schema is always up-to-date.
 
 ### Running with Docker Compose
 
