@@ -32,16 +32,11 @@
         async rewrites() {
           return [
             // OpenAI 兼容路由
-            { source: "/v1/:path*", destination: "/api/openai/v1/:path*" },
-            // Gemini 原生路由
-            {
-              source: "/gemini/v1beta/:path*",
-              destination: "/api/gemini/v1beta/:path*",
-            },
+            { source: "/v1/:path*", destination: "/openai/v1/:path*" },
             // Gemini 别名路由
             {
               source: "/v1beta/:path*",
-              destination: "/api/gemini/v1beta/:path*",
+              destination: "/gemini/v1beta/:path*",
             },
           ];
         },

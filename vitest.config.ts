@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      db: path.resolve(__dirname, "./src/lib/db.sqlite.ts"),
     },
   },
 });

@@ -1,12 +1,32 @@
 "use server";
 
-import { prisma } from "@/lib/db";
+import {
+  apiKeys,
+  errorLogs,
+  requestLogs,
+  settings as settingsTable,
+} from "@/lib/db/schema";
 import { getDictionary } from "@/lib/get-dictionary";
 import { getLocale } from "@/lib/get-locale";
 import { resetKeyManager } from "@/lib/key-manager";
 import { resetKeyFailureCount, verifyKey } from "@/lib/services/key.service";
-import { ParsedSettings, resetSettings } from "@/lib/settings";
+import {
+  ParsedSettings,
+  resetSettings,
+  updateSetting as updateSettingInDb,
+} from "@/lib/settings";
 import bcrypt from "bcrypt";
+import { db } from "db";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  type InferSelectModel,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 type Stats = {
@@ -25,52 +45,45 @@ export async function addApiKeys(keysString: string) {
     return { error: t.error.noKeys };
   }
 
-  // 1. Process the input string into a clean list of potential keys
   const allSubmittedKeys = keysString
-    .split(/[\n,]+/) // Split by newlines or commas
+    .split(/[\n,]+/)
     .map((key) => key.trim())
-    .filter(Boolean); // Filter out any empty strings
+    .filter(Boolean);
 
   if (allSubmittedKeys.length === 0) {
     return { error: t.error.noKeysInInput };
   }
 
-  // 2. Remove duplicates from the user's input
   const uniqueSubmittedKeys = [...new Set(allSubmittedKeys)];
 
   try {
-    // 3. Find which of the submitted keys already exist in the database
-    const existingKeys = await prisma.apiKey.findMany({
-      where: {
-        key: { in: uniqueSubmittedKeys },
-      },
-      select: { key: true }, // Only select the key field
-    });
-    const existingKeySet = new Set(existingKeys.map((k) => k.key));
+    type ApiKeySelect = InferSelectModel<typeof apiKeys>;
+    const existingKeysResult = await db
+      .select({ key: apiKeys.key })
+      .from(apiKeys)
+      .where(inArray(apiKeys.key, uniqueSubmittedKeys));
+    const existingKeySet = new Set(
+      existingKeysResult.map((k: Pick<ApiKeySelect, "key">) => k.key)
+    );
 
-    // 4. Determine which keys are genuinely new
     const newKeysToAdd = uniqueSubmittedKeys.filter(
       (key) => !existingKeySet.has(key)
     );
 
     let message = "";
 
-    // 5. Add the new keys if there are any
     if (newKeysToAdd.length > 0) {
-      await prisma.apiKey.createMany({
-        data: newKeysToAdd.map((key) => ({ key })),
-      });
+      await db.insert(apiKeys).values(newKeysToAdd.map((key) => ({ key })));
       message += t.success.added.replace(
         "{count}",
         newKeysToAdd.length.toString()
       );
-      resetKeyManager(); // Invalidate the key manager cache
-      revalidatePath("/admin"); // Revalidate the page to show new keys
+      resetKeyManager();
+      revalidatePath("/admin");
     } else {
       message += t.info.noNewKeys;
     }
 
-    // 6. Report back on duplicates
     const duplicateCount = uniqueSubmittedKeys.length - newKeysToAdd.length;
     if (duplicateCount > 0) {
       message +=
@@ -93,15 +106,16 @@ export async function deleteApiKeys(keys: string[]) {
     return { error: t.error.noKeysForDeletion };
   }
   try {
-    const deleteResponse = await prisma.apiKey.deleteMany({
-      where: { key: { in: keys } },
-    });
-    resetKeyManager(); // Reset the singleton instance
+    const deleteResponse = await db
+      .delete(apiKeys)
+      .where(inArray(apiKeys.key, keys))
+      .returning();
+    resetKeyManager();
     revalidatePath("/admin");
     return {
       success: t.success.deleted.replace(
         "{count}",
-        deleteResponse.count.toString()
+        deleteResponse.length.toString()
       ),
     };
   } catch {
@@ -118,7 +132,7 @@ export async function resetKeysFailures(keys: string[]) {
     return { error: t.error.noKeysForReset };
   }
   try {
-    await Promise.all(keys.map(key => resetKeyFailureCount(key)));
+    await Promise.all(keys.map((key) => resetKeyFailureCount(key)));
     revalidatePath("/admin");
     return {
       success: t.success.reset.replace("{count}", keys.length.toString()),
@@ -156,21 +170,27 @@ export async function getKeyUsageDetails(apiKey: string) {
   const t = dictionary.keys.table.usage;
 
   try {
-    // In the DB, we only store the full API key, not the slice.
-    // The original code had a bug where it was searching by the slice.
-    const where = { apiKey: apiKey };
+    const where = eq(requestLogs.apiKey, apiKey);
 
-    const totalCalls = await prisma.requestLog.count({ where });
-    const successfulCalls = await prisma.requestLog.count({
-      where: { ...where, isSuccess: true },
-    });
+    const totalCallsResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(where);
+    const successfulCallsResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(and(where, eq(requestLogs.isSuccess, true)));
+
+    const totalCalls = totalCallsResult[0].count;
+    const successfulCalls = successfulCallsResult[0].count;
     const failedCalls = totalCalls - successfulCalls;
 
-    const recentLogs = await prisma.requestLog.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 50, // Get last 50 logs
-    });
+    const recentLogs = await db
+      .select()
+      .from(requestLogs)
+      .where(where)
+      .orderBy(desc(requestLogs.createdAt))
+      .limit(50);
 
     return {
       stats: {
@@ -197,15 +217,9 @@ export async function updateSetting(key: string, value: string) {
   const t = dictionary.config.form;
 
   try {
-    await prisma.setting.upsert({
-      where: { key },
-      update: { value },
-      create: { key, value },
-    });
-
-    resetSettings(); // 清空配置缓存
-    revalidatePath("/admin"); // 重新验证管理页面
-
+    await updateSettingInDb(key, value);
+    resetSettings();
+    revalidatePath("/admin");
     return { success: t.success.updated };
   } catch (error) {
     console.error(`Failed to update setting ${key}:`, error);
@@ -223,12 +237,10 @@ export async function updateSettings(settings: ParsedSettings) {
       AUTH_TOKEN?: string;
     } = { ...settings };
 
-    // Handle AUTH_TOKEN separately
     if (settings.AUTH_TOKEN) {
       const hashedToken = await bcrypt.hash(settings.AUTH_TOKEN, 10);
       settingsToUpdate.AUTH_TOKEN = hashedToken;
     } else {
-      // If the token is empty, we don't update it.
       delete settingsToUpdate.AUTH_TOKEN;
     }
 
@@ -243,17 +255,19 @@ export async function updateSettings(settings: ParsedSettings) {
       } else {
         dbValue = value as string;
       }
-      return prisma.setting.upsert({
-        where: { key },
-        update: { value: dbValue },
-        create: { key, value: dbValue },
-      });
+      return db
+        .insert(settingsTable)
+        .values({ key, value: dbValue })
+        .onConflictDoUpdate({
+          target: settingsTable.key,
+          set: { value: dbValue },
+        });
     });
 
-    await prisma.$transaction(updates);
+    await Promise.all(updates);
 
     resetSettings();
-    resetKeyManager(); // Also reset key manager in case MAX_FAILURES changed
+    resetKeyManager();
     revalidatePath("/admin/config");
     revalidatePath("/admin");
 
@@ -270,12 +284,14 @@ export async function getKeyStats() {
   const t = dictionary.dashboard;
 
   try {
-    const totalKeys = await prisma.apiKey.count();
-    const enabledKeys = await prisma.apiKey.count({
-      where: { enabled: true },
-    });
-    // The proposal mentions "invalid" keys. In our schema, this corresponds to keys that are NOT enabled.
-    // This could be because they failed health checks or were manually disabled.
+    const totalKeysResult = await db.select({ count: count() }).from(apiKeys);
+    const enabledKeysResult = await db
+      .select({ count: count() })
+      .from(apiKeys)
+      .where(eq(apiKeys.enabled, true));
+
+    const totalKeys = totalKeysResult[0].count;
+    const enabledKeys = enabledKeysResult[0].count;
     const invalidKeys = totalKeys - enabledKeys;
 
     return {
@@ -306,22 +322,23 @@ export async function getApiCallStats() {
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const callsLastMinute = await prisma.requestLog.count({
-      where: { createdAt: { gte: oneMinuteAgo } },
-    });
-
-    const callsLastHour = await prisma.requestLog.count({
-      where: { createdAt: { gte: oneHourAgo } },
-    });
-
-    const callsLast24Hours = await prisma.requestLog.count({
-      where: { createdAt: { gte: twentyFourHoursAgo } },
-    });
+    const callsLastMinuteResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(gte(requestLogs.createdAt, oneMinuteAgo));
+    const callsLastHourResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(gte(requestLogs.createdAt, oneHourAgo));
+    const callsLast24HoursResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(gte(requestLogs.createdAt, twentyFourHoursAgo));
 
     return {
-      lastMinute: callsLastMinute,
-      lastHour: callsLastHour,
-      last24Hours: callsLast24Hours,
+      lastMinute: callsLastMinuteResult[0].count,
+      lastHour: callsLastHourResult[0].count,
+      last24Hours: callsLast24HoursResult[0].count,
       error: null,
     };
   } catch (error) {
@@ -341,18 +358,16 @@ export async function getDetailedKeyStats() {
   const t = dictionary.dashboard;
 
   try {
-    const allKeys = await prisma.apiKey.findMany({
-      select: {
-        key: true,
-        enabled: true,
-        failCount: true,
-        createdAt: true,
-        lastUsed: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const allKeys = await db
+      .select({
+        key: apiKeys.key,
+        enabled: apiKeys.enabled,
+        failCount: apiKeys.failCount,
+        createdAt: apiKeys.createdAt,
+        lastUsed: apiKeys.lastUsed,
+      })
+      .from(apiKeys)
+      .orderBy(desc(apiKeys.createdAt));
 
     return { allKeys, error: null };
   } catch (error) {
@@ -373,32 +388,39 @@ export async function getDetailedApiCallStats(timeframe: TimeFrame) {
 
   try {
     const now = new Date();
-    let gte: Date;
+    let gteDate: Date;
 
     switch (timeframe) {
       case "1m":
-        gte = new Date(now.getTime() - 1 * 60 * 1000);
+        gteDate = new Date(now.getTime() - 1 * 60 * 1000);
         break;
       case "1h":
-        gte = new Date(now.getTime() - 60 * 60 * 1000);
+        gteDate = new Date(now.getTime() - 60 * 60 * 1000);
         break;
       case "24h":
-        gte = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        gteDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         break;
     }
 
-    const recentLogs = await prisma.requestLog.findMany({
-      where: { createdAt: { gte } },
-      orderBy: { createdAt: "desc" },
-      take: 100, // Limit to the last 100 logs for performance
-    });
+    const where = gte(requestLogs.createdAt, gteDate);
+    const recentLogs = await db
+      .select()
+      .from(requestLogs)
+      .where(where)
+      .orderBy(desc(requestLogs.createdAt))
+      .limit(100);
 
-    const total = await prisma.requestLog.count({
-      where: { createdAt: { gte } },
-    });
-    const success = await prisma.requestLog.count({
-      where: { createdAt: { gte }, isSuccess: true },
-    });
+    const totalResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(where);
+    const successResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(and(where, eq(requestLogs.isSuccess, true)));
+
+    const total = totalResult[0].count;
+    const success = successResult[0].count;
     const failed = total - success;
 
     return { logs: recentLogs, stats: { total, success, failed }, error: null };
@@ -415,8 +437,6 @@ export async function getDetailedApiCallStats(timeframe: TimeFrame) {
   }
 }
 
-// Log Management Actions
-
 type LogType = "request" | "error";
 
 interface LogFilters {
@@ -426,12 +446,9 @@ interface LogFilters {
   apiKey?: string;
   errorType?: string;
   errorCode?: string;
-  startDate?: string; // ISO string
-  endDate?: string; // ISO string
+  startDate?: string;
+  endDate?: string;
 }
-
-type RequestLogWhere = import("@prisma/client").Prisma.RequestLogWhereInput;
-type ErrorLogWhere = import("@prisma/client").Prisma.ErrorLogWhereInput;
 
 export async function getLogs(filters: LogFilters) {
   const locale = await getLocale();
@@ -451,47 +468,53 @@ export async function getLogs(filters: LogFilters) {
 
   try {
     if (logType === "request") {
-      const where: RequestLogWhere = {};
-      if (apiKey) where.apiKey = { contains: apiKey };
-      if (errorCode) where.statusCode = { equals: parseInt(errorCode, 10) };
-
-      const createdAtFilter: { gte?: Date; lte?: Date } = {};
-      if (startDate) createdAtFilter.gte = new Date(startDate);
-      if (endDate) createdAtFilter.lte = new Date(endDate);
-      if (Object.keys(createdAtFilter).length > 0) {
-        where.createdAt = createdAtFilter;
-      }
-
-      const total = await prisma.requestLog.count({ where });
-      const logs = await prisma.requestLog.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
-      return { logs, total, error: null };
-    } else {
-      const where: ErrorLogWhere = {};
-      if (apiKey) where.apiKey = { contains: apiKey };
-      if (errorType) where.errorType = { contains: errorType };
+      const conditions = [];
+      if (apiKey) conditions.push(eq(requestLogs.apiKey, apiKey));
       if (errorCode)
-        where.errorMessage = { contains: `status_code=${errorCode}` };
+        conditions.push(eq(requestLogs.statusCode, parseInt(errorCode, 10)));
+      if (startDate)
+        conditions.push(gte(requestLogs.createdAt, new Date(startDate)));
+      if (endDate)
+        conditions.push(lte(requestLogs.createdAt, new Date(endDate)));
 
-      const createdAtFilter: { gte?: Date; lte?: Date } = {};
-      if (startDate) createdAtFilter.gte = new Date(startDate);
-      if (endDate) createdAtFilter.lte = new Date(endDate);
-      if (Object.keys(createdAtFilter).length > 0) {
-        where.createdAt = createdAtFilter;
-      }
+      const where = and(...conditions);
+      const totalResult = await db
+        .select({ count: count() })
+        .from(requestLogs)
+        .where(where);
+      const logs = await db
+        .select()
+        .from(requestLogs)
+        .where(where)
+        .orderBy(desc(requestLogs.createdAt))
+        .limit(limit)
+        .offset((page - 1) * limit);
 
-      const total = await prisma.errorLog.count({ where });
-      const logs = await prisma.errorLog.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
-      return { logs, total, error: null };
+      return { logs, total: totalResult[0].count, error: null };
+    } else {
+      const conditions = [];
+      if (apiKey) conditions.push(eq(errorLogs.apiKey, apiKey));
+      if (errorType) conditions.push(eq(errorLogs.errorType, errorType));
+      if (errorCode)
+        conditions.push(eq(errorLogs.errorMessage, `status_code=${errorCode}`));
+      if (startDate)
+        conditions.push(gte(errorLogs.createdAt, new Date(startDate)));
+      if (endDate) conditions.push(lte(errorLogs.createdAt, new Date(endDate)));
+
+      const where = and(...conditions);
+      const totalResult = await db
+        .select({ count: count() })
+        .from(errorLogs)
+        .where(where);
+      const logs = await db
+        .select()
+        .from(errorLogs)
+        .where(where)
+        .orderBy(desc(errorLogs.createdAt))
+        .limit(limit)
+        .offset((page - 1) * limit);
+
+      return { logs, total: totalResult[0].count, error: null };
     }
   } catch (_error) {
     const errorMessage = t.error.failedToFetch.replace("{logType}", logType);
@@ -508,17 +531,19 @@ export async function deleteLogs(logIds: number[], logType: LogType) {
   try {
     let response;
     if (logType === "request") {
-      response = await prisma.requestLog.deleteMany({
-        where: { id: { in: logIds } },
-      });
+      response = await db
+        .delete(requestLogs)
+        .where(inArray(requestLogs.id, logIds))
+        .returning();
     } else {
-      response = await prisma.errorLog.deleteMany({
-        where: { id: { in: logIds } },
-      });
+      response = await db
+        .delete(errorLogs)
+        .where(inArray(errorLogs.id, logIds))
+        .returning();
     }
     revalidatePath("/admin");
     return {
-      success: t.success.deleted.replace("{count}", response.count.toString()),
+      success: t.success.deleted.replace("{count}", response.length.toString()),
     };
   } catch (_error) {
     console.error(`Failed to delete ${logType} logs:`, _error);
@@ -533,9 +558,9 @@ export async function clearAllLogs(logType: LogType) {
 
   try {
     if (logType === "request") {
-      await prisma.requestLog.deleteMany({});
+      await db.delete(requestLogs);
     } else {
-      await prisma.errorLog.deleteMany({});
+      await db.delete(errorLogs);
     }
     revalidatePath("/admin");
     return { success: t.success.cleared.replace("{logType}", logType) };
@@ -546,60 +571,87 @@ export async function clearAllLogs(logType: LogType) {
 }
 
 async function getStats(apiKey?: string): Promise<Stats> {
-  const where = apiKey ? { apiKey } : {};
   const now = new Date();
   const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000);
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+  const baseConditions = apiKey ? [eq(requestLogs.apiKey, apiKey)] : [];
+
   try {
-    const queries = [
-      prisma.requestLog.count({
-        where: { ...where, createdAt: { gte: oneMinuteAgo } },
-      }),
-      prisma.requestLog.count({
-        where: { ...where, createdAt: { gte: oneMinuteAgo }, isSuccess: false },
-      }),
-      prisma.requestLog.count({
-        where: { ...where, createdAt: { gte: oneHourAgo } },
-      }),
-      prisma.requestLog.count({
-        where: { ...where, createdAt: { gte: oneHourAgo }, isSuccess: false },
-      }),
-      prisma.requestLog.count({
-        where: { ...where, createdAt: { gte: twentyFourHoursAgo } },
-      }),
-      prisma.requestLog.count({
-        where: {
-          ...where,
-          createdAt: { gte: twentyFourHoursAgo },
-          isSuccess: false,
-        },
-      }),
-    ];
+    const totalResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(and(...baseConditions));
+    const totalFailedResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(and(...baseConditions, eq(requestLogs.isSuccess, false)));
 
-    queries.unshift(
-      prisma.requestLog.count({ where }),
-      prisma.requestLog.count({ where: { ...where, isSuccess: false } })
-    );
+    const lastMinuteResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(and(...baseConditions, gte(requestLogs.createdAt, oneMinuteAgo)));
+    const lastMinuteFailedResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(
+        and(
+          ...baseConditions,
+          gte(requestLogs.createdAt, oneMinuteAgo),
+          eq(requestLogs.isSuccess, false)
+        )
+      );
 
-    const results = await Promise.all(queries);
+    const lastHourResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(and(...baseConditions, gte(requestLogs.createdAt, oneHourAgo)));
+    const lastHourFailedResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(
+        and(
+          ...baseConditions,
+          gte(requestLogs.createdAt, oneHourAgo),
+          eq(requestLogs.isSuccess, false)
+        )
+      );
 
-    const [
-      totalCalls,
-      totalFailed,
-      callsLastMinute,
-      failedLastMinute,
-      callsLastHour,
-      failedLastHour,
-      callsLast24Hours,
-      failedLast24Hours,
-    ] = results;
+    const last24HoursResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(
+        and(...baseConditions, gte(requestLogs.createdAt, twentyFourHoursAgo))
+      );
+    const last24HoursFailedResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(
+        and(
+          ...baseConditions,
+          gte(requestLogs.createdAt, twentyFourHoursAgo),
+          eq(requestLogs.isSuccess, false)
+        )
+      );
+
     return {
-      total: { total: totalCalls, failed: totalFailed },
-      "1m": { total: callsLastMinute, failed: failedLastMinute },
-      "1h": { total: callsLastHour, failed: failedLastHour },
-      "24h": { total: callsLast24Hours, failed: failedLast24Hours },
+      total: {
+        total: totalResult[0].count,
+        failed: totalFailedResult[0].count,
+      },
+      "1m": {
+        total: lastMinuteResult[0].count,
+        failed: lastMinuteFailedResult[0].count,
+      },
+      "1h": {
+        total: lastHourResult[0].count,
+        failed: lastHourFailedResult[0].count,
+      },
+      "24h": {
+        total: last24HoursResult[0].count,
+        failed: last24HoursFailedResult[0].count,
+      },
     };
   } catch (error) {
     console.error(

@@ -1,11 +1,14 @@
-import { prisma } from "@/lib/db";
+import { apiKeys } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import { getSettings } from "@/lib/settings";
+import { db } from "db";
+import type { InferSelectModel } from "drizzle-orm";
+import { and, asc, eq, gte, lt } from "drizzle-orm";
 
 /**
  * Gets the next working API key using a stateless, database-driven approach.
  * Implements LRU (Least Recently Used) strategy for key selection.
- * 
+ *
  * @returns A valid API key string
  * @throws Error if no valid keys are available
  */
@@ -13,30 +16,25 @@ export async function getNextWorkingKey(): Promise<string> {
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
 
-  // Find all enabled keys that have not exceeded failure threshold
-  const validKeys = await prisma.apiKey.findMany({
-    where: {
-      enabled: true,
-      failCount: {
-        lt: maxFailures
-      }
-    },
-    orderBy: {
-      lastUsed: 'asc' // LRU strategy - get the least recently used key
-    }
-  });
+  const validKeys = await db
+    .select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.enabled, true), lt(apiKeys.failCount, maxFailures)))
+    .orderBy(asc(apiKeys.lastUsed))
+    .limit(1);
 
   if (validKeys.length === 0) {
-    throw new Error("No API keys available. Please check key validity or reset failure counts.");
+    throw new Error(
+      "No API keys available. Please check key validity or reset failure counts."
+    );
   }
 
   const selectedKey = validKeys[0];
-  
-  // Atomically update the lastUsed timestamp for the selected key
-  await prisma.apiKey.update({
-    where: { id: selectedKey.id },
-    data: { lastUsed: new Date() }
-  });
+
+  await db
+    .update(apiKeys)
+    .set({ lastUsed: new Date() })
+    .where(eq(apiKeys.id, selectedKey.id));
 
   logger.info(
     { key: `...${selectedKey.key.slice(-4)}` },
@@ -48,19 +46,27 @@ export async function getNextWorkingKey(): Promise<string> {
 
 /**
  * Records a failure for an API key by incrementing its fail count.
- * 
+ *
  * @param key - The API key that failed
  */
 export async function handleApiFailure(key: string): Promise<void> {
   try {
-    await prisma.apiKey.update({
-      where: { key },
-      data: { 
-        failCount: { increment: 1 },
-        lastChecked: new Date()
-      }
-    });
-    
+    const currentKeyResult = await db
+      .select({ failCount: apiKeys.failCount })
+      .from(apiKeys)
+      .where(eq(apiKeys.key, key));
+
+    if (currentKeyResult.length > 0) {
+      const currentKey = currentKeyResult;
+      await db
+        .update(apiKeys)
+        .set({
+          failCount: currentKey[0].failCount + 1,
+          lastChecked: new Date(),
+        })
+        .where(eq(apiKeys.key, key));
+    }
+
     logger.warn(
       { key: `...${key.slice(-4)}` },
       "Failure recorded for API key."
@@ -75,19 +81,19 @@ export async function handleApiFailure(key: string): Promise<void> {
 
 /**
  * Resets the failure count for an API key.
- * 
+ *
  * @param key - The API key to reset
  */
 export async function resetKeyFailureCount(key: string): Promise<void> {
   try {
-    await prisma.apiKey.update({
-      where: { key },
-      data: { 
+    await db
+      .update(apiKeys)
+      .set({
         failCount: 0,
-        lastChecked: new Date()
-      }
-    });
-    
+        lastChecked: new Date(),
+      })
+      .where(eq(apiKeys.key, key));
+
     logger.info(
       { key: `...${key.slice(-4)}` },
       "Failure count reset for API key."
@@ -102,38 +108,38 @@ export async function resetKeyFailureCount(key: string): Promise<void> {
 
 /**
  * Gets all API keys with their status information.
- * 
+ *
  * @returns Array of key information objects
  */
-export async function getAllKeys(): Promise<{
-  key: string;
-  failCount: number;
-  isWorking: boolean;
-  lastUsed: Date | null;
-  lastChecked: Date | null;
-}[]> {
+export async function getAllKeys(): Promise<
+  {
+    key: string;
+    failCount: number;
+    isWorking: boolean;
+    lastUsed: Date | null;
+    lastChecked: Date | null;
+  }[]
+> {
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
-  
-  const keys = await prisma.apiKey.findMany({
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
 
-  return keys.map((apiKey) => ({
+  const keys = await db.select().from(apiKeys).orderBy(asc(apiKeys.createdAt));
+
+  type ApiKeySelect = InferSelectModel<typeof apiKeys>;
+
+  return keys.map((apiKey: ApiKeySelect) => ({
     key: apiKey.key,
     failCount: apiKey.failCount,
     isWorking: apiKey.enabled && apiKey.failCount < maxFailures,
     lastUsed: apiKey.lastUsed,
-    lastChecked: apiKey.lastChecked
+    lastChecked: apiKey.lastChecked,
   }));
 }
 
 /**
  * Verifies an API key by making a test call to the Gemini API.
  * If successful, resets the key's failure count.
- * 
+ *
  * @param key - The API key to verify
  * @returns True if the key is valid, false otherwise
  */
@@ -142,18 +148,18 @@ export async function verifyKey(key: string): Promise<boolean> {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const settings = await getSettings();
     const healthCheckModel = settings.HEALTH_CHECK_MODEL;
-    
+
     const genAI = new GoogleGenerativeAI(key);
     const model = genAI.getGenerativeModel({ model: healthCheckModel });
     await model.generateContent("hi");
-    
+
     await resetKeyFailureCount(key);
-    
+
     logger.info(
       { key: `...${key.slice(-4)}` },
       "Key is now active after successful health check."
     );
-    
+
     return true;
   } catch (error) {
     logger.warn(
@@ -169,19 +175,14 @@ export async function verifyKey(key: string): Promise<boolean> {
  */
 export async function checkAndReactivateKeys(): Promise<void> {
   logger.info("Starting check for inactive API keys...");
-  
+
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
 
-  // Find all keys that have exceeded failure threshold
-  const inactiveKeys = await prisma.apiKey.findMany({
-    where: {
-      enabled: true,
-      failCount: {
-        gte: maxFailures
-      }
-    }
-  });
+  const inactiveKeys = await db
+    .select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.enabled, true), gte(apiKeys.failCount, maxFailures)));
 
   if (inactiveKeys.length === 0) {
     logger.info("No inactive keys to check.");
