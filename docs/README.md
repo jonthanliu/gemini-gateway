@@ -18,6 +18,7 @@ This version goes beyond a simple proxy, offering a robust feature set including
 - **Multi-API Interface**:
   - **`/v1beta` & `/gemini`**: Gemini-native proxy endpoints with flexible authentication (API key in URL, `x-goog-api-key` header, or Bearer token).
   - **`/openai`**: An OpenAI-compatible endpoint that requires strict Bearer token authentication.
+  - **`/v1/messages`**: An Anthropic-compatible endpoint that allows you to use Anthropic SDKs with Gemini models.
 - **Intelligent Load Balancing**: Manages a pool of Gemini API keys, rotating them to distribute request loads.
 - **Automatic Failover & Retry**: If a request fails, it automatically retries with the next available key, ensuring high availability.
 - **Persistent Health Tracking**: Monitors key failures, automatically sidelining failing keys and syncing their status to a persistent database.
@@ -253,4 +254,13 @@ curl -X POST http://localhost:3000/openai/v1/chat/completions \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer user_token_1" \
 -d '{"model": "gemini-pro", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+**Example `curl` for Anthropic:**
+
+```bash
+curl -X POST http://localhost:3000/v1/messages \
+-H "Content-Type: application/json" \
+-H "x-api-key: user_token_1" \
+-d '{"model": "gemini-pro", "messages": [{"role": "user", "content": "Hello!"}], "max_tokens": 1024}'
 ```

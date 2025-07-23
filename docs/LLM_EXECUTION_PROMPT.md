@@ -13,12 +13,9 @@
   2.  **简化配置**: 追求“零环境变量”的开箱即用体验。
   3.  **减少依赖**: 审慎引入外部依赖，优先使用平台原生能力（Web Standards, Next.js, Cloudflare/Vercel Edge Runtime）。
   4.  **灵活部署**: 架构必须同时支持 Cloudflare D1, 自托管 PostgreSQL, 以及本地 SQLite 文件。
-- **当前状态**: 项目的核心架构重构已基本完成。ORM 已从 Prisma 迁移到 Drizzle，原生依赖 `better-sqlite3` 已被纯 JS 的 `@libsql/client` 替换，所有已知的构建时错误和测试问题均已解决。你当前的核心任务是**在新的、稳定的架构基础上，继续完成开发计划中的后续任务**。
 - **关键文档**:
   - `docs/CONTINUATION_GUIDE.md`: 你的工作圣经。
   - `docs/6_Developer_Guides/LLM_NEXTJS_MYTHS.md`: **Next.js 开发避坑指南，必须首先阅读**。
-  - `docs/2_Assessments_and_Reviews/PROJECT_PROGRESS_REPORT_20250723_ZH.md`: 描述了项目现状和问题。
-  - `docs/3_Development_Plans/NEXT_STAGE_IMPLEMENTATION_PLAN_20250723_ZH.md`: **你所有工作的唯一任务来源和路线图**。
 
 ---
 
@@ -28,7 +25,7 @@
 
 **第 1 步：确定当前任务**
 
-- **行动**: 读取并分析 `docs/3_Development_Plans/NEXT_STAGE_IMPLEMENTATION_PLAN_20250723_ZH.md` 文件。
+- **行动**: 读取并分析项目的工作清单文件。
 - **输出**: 识别出**优先级最高**的、尚未完成的**第一个任务**。在思考过程中明确说出你将要执行的任务名称。
 
 **第 2 步：理解任务细节**
@@ -67,13 +64,3 @@
 
 - **行动**: 在**成功创建 Git 提交**后，你应该**立即回到第 1 步**，重新读取工作计划，开始下一个任务。
 - **原则**: 严格按照计划清单的优先级顺序执行，不要自行决定任务顺序。
-
----
-
-### **3. 你的第一个任务**
-
-你的工作将从这里开始：
-
-1.  **读取** `docs/3_Development_Plans/NEXT_STAGE_IMPLEMENTATION_PLAN_20250723_ZH.md`。
-2.  **定位**并**宣布**你要执行的第一个 P0 级任务：“实现 API 路由兼容性”。
-3.  **开始**按照 SOP 执行该任务。

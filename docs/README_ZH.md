@@ -18,6 +18,7 @@ You can read this document in [English](README.md).
 - **多 API 接口**:
   - **`/v1beta` 和 `/gemini`**: Gemini 原生代理端点，支持灵活的身份验证（URL 中的 API 密钥、`x-goog-api-key` 请求头或 Bearer 令牌）。
   - **`/openai`**: OpenAI 兼容端点，要求严格的 Bearer 令牌身份验证。
+  - **`/v1/messages`**: Anthropic 兼容端点，允许您通过 Anthropic SDK 使用 Gemini 模型。
 - **智能负载均衡**: 管理一个 Gemini API 密钥池，轮流使用密钥以分配请求负载。
 - **自动故障转移与重试**: 如果使用特定密钥的请求失败，系统会自动使用下一个可用密钥重试，确保服务的高可用性。
 - **持久化健康跟踪**: 监控密钥失败次数，自动将失败的密钥移出活动池，并将其状态同步到持久化数据库。
@@ -275,4 +276,13 @@ curl -X POST http://localhost:3000/openai/v1/chat/completions \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer user_token_1" \
 -d '{"model": "gemini-pro", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+**Anthropic `curl` 示例:**
+
+```bash
+curl -X POST http://localhost:3000/v1/messages \
+-H "Content-Type: application/json" \
+-H "x-api-key: user_token_1" \
+-d '{"model": "gemini-pro", "messages": [{"role": "user", "content": "Hello!"}], "max_tokens": 1024}'
 ```
