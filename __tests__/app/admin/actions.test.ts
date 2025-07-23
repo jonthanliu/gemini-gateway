@@ -1,8 +1,9 @@
 import { addApiKeys, updateSettings } from "@/app/[lang]/admin/actions";
+import * as crypto from "@/lib/crypto";
 import { apiKeys, settings as settingsTable } from "@/lib/db/schema";
 import * as keyManager from "@/lib/key-manager";
+import type { ParsedSettings } from "@/lib/settings";
 import * as settingsService from "@/lib/settings";
-import bcrypt from "bcrypt";
 import * as cache from "next/cache";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,7 +27,7 @@ vi.mock("@/lib/services/key.service");
 vi.mock("@/lib/settings");
 vi.mock("@/lib/key-manager");
 vi.mock("next/cache");
-vi.mock("bcrypt");
+vi.mock("@/lib/crypto");
 
 const mocks = vi.hoisted(() => {
   return {
@@ -73,7 +74,7 @@ describe("Admin Actions", () => {
 
   describe("updateSettings", () => {
     it("should update settings and hash the auth token", async () => {
-      (bcrypt.hash as vi.Mock).mockResolvedValue("hashed_token");
+      vi.spyOn(crypto, "hashToken").mockResolvedValue("hashed_token");
 
       const onConflictMock = vi.fn();
       const valuesMock = vi.fn(() => ({ onConflictDoUpdate: onConflictMock }));
@@ -85,9 +86,9 @@ describe("Admin Actions", () => {
         TOOLS_CODE_EXECUTION_ENABLED: true,
       };
 
-      const result = await updateSettings(settingsToUpdate as any);
+      const result = await updateSettings(settingsToUpdate as ParsedSettings);
 
-      expect(bcrypt.hash).toHaveBeenCalledWith("new_token", 10);
+      expect(crypto.hashToken).toHaveBeenCalledWith("new_token");
       expect(mocks.db.insert).toHaveBeenCalledWith(settingsTable);
       expect(valuesMock).toHaveBeenCalledTimes(3);
       expect(valuesMock).toHaveBeenCalledWith({

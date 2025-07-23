@@ -1,7 +1,7 @@
 import { Locale } from "@/i18n-config";
+import { verifyToken } from "@/lib/crypto";
 import { getDictionary } from "@/lib/get-dictionary";
 import { getSettings } from "@/lib/settings";
-import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminClientLayout from "./AdminClientLayout";
@@ -21,7 +21,7 @@ export default async function AdminLayout({
 
   let isAuthorized = false;
   if (tokenFromCookie && storedAuthTokenHash) {
-    isAuthorized = await bcrypt.compare(tokenFromCookie, storedAuthTokenHash);
+    isAuthorized = await verifyToken(tokenFromCookie, storedAuthTokenHash);
   }
 
   // If the cookie is missing, or if it's present but doesn't match the

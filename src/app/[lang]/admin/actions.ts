@@ -1,5 +1,6 @@
 "use server";
 
+import { hashToken } from "@/lib/crypto";
 import {
   apiKeys,
   errorLogs,
@@ -15,7 +16,6 @@ import {
   resetSettings,
   updateSetting as updateSettingInDb,
 } from "@/lib/settings";
-import bcrypt from "bcrypt";
 import { db } from "db";
 import {
   and,
@@ -238,7 +238,7 @@ export async function updateSettings(settings: ParsedSettings) {
     } = { ...settings };
 
     if (settings.AUTH_TOKEN) {
-      const hashedToken = await bcrypt.hash(settings.AUTH_TOKEN, 10);
+      const hashedToken = await hashToken(settings.AUTH_TOKEN);
       settingsToUpdate.AUTH_TOKEN = hashedToken;
     } else {
       delete settingsToUpdate.AUTH_TOKEN;

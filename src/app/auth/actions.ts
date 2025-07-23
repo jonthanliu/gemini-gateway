@@ -1,14 +1,12 @@
 "use server";
 
+import { hashToken, verifyToken } from "@/lib/crypto";
 import { getDictionary } from "@/lib/get-dictionary";
 import { getLocale } from "@/lib/get-locale";
 import logger from "@/lib/logger";
 import { getSettings, updateSetting } from "@/lib/settings";
-import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-const SALT_ROUNDS = 10;
 
 export async function login(
   state: { error?: string },
@@ -31,7 +29,7 @@ export async function login(
 
   // Case 1: System is already configured with a hashed token.
   if (storedAuthTokenHash) {
-    const isValid = await bcrypt.compare(submittedToken, storedAuthTokenHash);
+    const isValid = await verifyToken(submittedToken, storedAuthTokenHash);
     if (!isValid) {
       logger.warn("Login failed: Invalid token.");
       return { error: t.error.invalidToken };
@@ -40,7 +38,7 @@ export async function login(
   // Case 2: Initial setup. The first submitted token sets the new hash.
   else {
     logger.info("Initial setup: Hashing new token...");
-    const newHash = await bcrypt.hash(submittedToken, SALT_ROUNDS);
+    const newHash = await hashToken(submittedToken);
     try {
       await updateSetting("AUTH_TOKEN", newHash);
       logger.info("AUTH_TOKEN has been set.");
