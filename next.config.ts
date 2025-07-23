@@ -5,7 +5,18 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ["./prisma/**/*"],
   },
-  /* config options here */
+  async rewrites() {
+    return [
+      // OpenAI 兼容路由
+      { source: "/v1/:path*", destination: "/openai/v1/:path*" },
+      // Gemini 原生路由 (no rewrite needed as they're already at the correct path)
+      // Gemini 别名路由 - map /v1beta/... to /gemini/v1beta/...
+      {
+        source: "/v1beta/:path*",
+        destination: "/gemini/v1beta/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
