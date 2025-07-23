@@ -6,8 +6,6 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy schema first for `postinstall`
-COPY prisma ./prisma
 # Copy package manager files
 COPY package.json pnpm-lock.yaml* ./
 # Install dependencies
@@ -22,13 +20,7 @@ COPY . .
 # Set build-time env vars
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# DATABASE_URL is required at build time for `prisma generate`.
-# All other settings are managed via the UI at runtime.
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-
-# Generate Prisma client and build the project
-RUN corepack enable pnpm && pnpm prisma generate
+# Build the project
 RUN corepack enable pnpm && pnpm build
 
 # 3. Runner stage

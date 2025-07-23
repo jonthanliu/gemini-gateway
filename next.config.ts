@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingIncludes: {
-    "/*": ["./prisma/**/*"],
+    "/*": ["./drizzle/**/*"],
   },
   async rewrites() {
     return [

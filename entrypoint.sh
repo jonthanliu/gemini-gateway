@@ -12,7 +12,7 @@ chown -R nextjs:nodejs /app/data
 # 2. Run migrations and the application as the non-root 'nextjs' user.
 # This drops root privileges for the long-running application process, which is a security best practice.
 echo "Running database migrations as nextjs user..."
-su-exec nextjs:nodejs npx prisma migrate deploy
+su-exec nextjs:nodejs pnpm db:migrate
 
 # Ensure the created database file and the directory itself have the correct ownership,
 # which is crucial for SQLite to be able to create journal files for write operations.
