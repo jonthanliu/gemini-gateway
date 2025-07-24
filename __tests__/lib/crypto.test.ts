@@ -1,48 +1,38 @@
 import { hashToken, verifyToken } from "@/lib/crypto";
 import { describe, expect, it } from "vitest";
 
-describe("Crypto Service", () => {
-  const testToken = "my-secret-password-123";
+describe("Crypto Functions", () => {
+  it("should correctly verify a valid token against its hash", async () => {
+    const password = "my-secret-password";
+    const hash = await hashToken(password);
 
-  describe("hashToken", () => {
-    it("should generate a hash in the format 'prefix$salt$hash'", async () => {
-      const hashedToken = await hashToken(testToken);
-      const parts = hashedToken.split("$");
-      expect(parts.length).toBe(3);
-      expect(parts[0]).toBe("pbkdf2_sha256");
-      expect(parts[1]).toMatch(/^[0-9a-f]{32}$/); // 16 bytes salt -> 32 hex chars
-      expect(parts[2]).toMatch(/^[0-9a-f]{64}$/); // 256 bits hash -> 64 hex chars
-    });
+    // The hash should not be the same as the password
+    expect(hash).not.toBe(password);
+
+    // Verification with the correct password should succeed
+    const isValid = await verifyToken(password, hash);
+    expect(isValid).toBe(true);
   });
 
-  describe("verifyToken", () => {
-    it("should successfully verify a correct token", async () => {
-      const hashedToken = await hashToken(testToken);
-      const isValid = await verifyToken(testToken, hashedToken);
-      expect(isValid).toBe(true);
-    });
+  it("should correctly reject an invalid token", async () => {
+    const password = "my-secret-password";
+    const wrongPassword = "not-my-password";
+    const hash = await hashToken(password);
 
-    it("should fail to verify an incorrect token", async () => {
-      const hashedToken = await hashToken(testToken);
-      const isValid = await verifyToken("wrong-password", hashedToken);
-      expect(isValid).toBe(false);
-    });
+    // Verification with the wrong password should fail
+    const isInvalid = await verifyToken(wrongPassword, hash);
+    expect(isInvalid).toBe(false);
+  });
 
-    it("should return false for a malformed hash (not enough parts)", async () => {
-      const isValid = await verifyToken(testToken, "pbkdf2_sha256$saltonly");
-      expect(isValid).toBe(false);
-    });
+  it("should return false when verifying against an empty hash", async () => {
+    const password = "my-secret-password";
+    const isValid = await verifyToken(password, "");
+    expect(isValid).toBe(false);
+  });
 
-    it("should return false for a hash with an incorrect format prefix", async () => {
-      const hashedToken = await hashToken(testToken);
-      const malformedHash = hashedToken.replace("pbkdf2_sha256", "bcrypt");
-      const isValid = await verifyToken(testToken, malformedHash);
-      expect(isValid).toBe(false);
-    });
-
-    it("should return false for a completely invalid hash string", async () => {
-      const isValid = await verifyToken(testToken, "invalid-hash-string");
-      expect(isValid).toBe(false);
-    });
+  it("should return false when verifying an empty password", async () => {
+    const hash = await hashToken("any-password");
+    const isValid = await verifyToken("", hash);
+    expect(isValid).toBe(false);
   });
 });

@@ -31,6 +31,9 @@ function hexToBuffer(hex: string): ArrayBuffer {
  * @returns A promise that resolves to a string containing the format, salt, and hash.
  */
 export async function hashToken(token: string): Promise<string> {
+  if (!token || typeof token !== "string") {
+    throw new Error("Token must be a non-empty string.");
+  }
   const salt = webcrypto.getRandomValues(new Uint8Array(SALT_LENGTH));
   const encoder = new TextEncoder();
   const keyMaterial = await webcrypto.subtle.importKey(
@@ -68,6 +71,18 @@ export async function verifyToken(
   token: string,
   storedHash: string
 ): Promise<boolean> {
+  // Guard against empty or invalid inputs
+  if (
+    !token ||
+    !storedHash ||
+    typeof token !== "string" ||
+    typeof storedHash !== "string" ||
+    token.length === 0 ||
+    storedHash.length === 0
+  ) {
+    return false;
+  }
+
   try {
     const [format, saltHex, storedHashHex] = storedHash.split("$");
     if (format !== HASH_FORMAT_PREFIX || !saltHex || !storedHashHex) {
