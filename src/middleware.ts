@@ -4,6 +4,16 @@ import Negotiator from "negotiator";
 import { NextRequest, NextResponse } from "next/server";
 
 function getLocale(request: NextRequest): string {
+  // 1. Check for language preference in cookie
+  const localeCookie = request.cookies.get("NEXT_LOCALE")?.value;
+  if (
+    localeCookie &&
+    i18n.locales.includes(localeCookie as (typeof i18n.locales)[number])
+  ) {
+    return localeCookie;
+  }
+
+  // 2. Fallback to Accept-Language header
   const negotiatorHeaders: Record<string, string> = {};
   request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
 
