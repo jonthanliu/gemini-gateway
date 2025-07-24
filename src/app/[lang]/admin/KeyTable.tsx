@@ -24,25 +24,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dictionary } from "@/lib/dictionaries";
+import { getAllKeys } from "@/lib/services/key.service";
 import { formatApiKey } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import {
-  deleteApiKeys,
-  getApiKeyStats,
-  resetKeysFailures,
-  verifyApiKeys,
-} from "./actions";
+import { useState, useTransition } from "react";
+import { deleteApiKeys, resetKeysFailures, verifyApiKeys } from "./actions";
 import { KeyUsageDetail } from "./KeyUsageDetail";
 
-export type Key = {
-  key: string;
-  failCount: number;
-  isWorking: boolean;
-  lastFailedAt: Date | null;
-};
-
-type KeyStats = Awaited<ReturnType<typeof getApiKeyStats>>;
+export type Key = Awaited<ReturnType<typeof getAllKeys>>[number];
 
 interface KeyTableProps {
   keys: Key[];
@@ -61,15 +50,6 @@ export function KeyTable({
 }: KeyTableProps) {
   const [isPending, startTransition] = useTransition();
   const [viewingKey, setViewingKey] = useState<string | null>(null);
-  const [stats, setStats] = useState<Record<string, KeyStats>>({});
-
-  useEffect(() => {
-    keys.forEach((key) => {
-      getApiKeyStats(key.key).then((keyStats) => {
-        setStats((prev) => ({ ...prev, [key.key]: keyStats }));
-      });
-    });
-  }, [keys]);
 
   const handleDelete = (key: string) => {
     const confirmMessage = dictionary.deleteConfirmation.replace(
@@ -193,10 +173,10 @@ export function KeyTable({
                 </span>
               </TableCell>
               <TableCell>{key.failCount}</TableCell>
-              <TableCell>{stats[key.key]?.total.total ?? "..."}</TableCell>
-              <TableCell>{stats[key.key]?.["1m"].total ?? "..."}</TableCell>
-              <TableCell>{stats[key.key]?.["1h"].total ?? "..."}</TableCell>
-              <TableCell>{stats[key.key]?.["24h"].total ?? "..."}</TableCell>
+              <TableCell>{key.totalRequests}</TableCell>
+              <TableCell>...</TableCell>
+              <TableCell>...</TableCell>
+              <TableCell>...</TableCell>
               <TableCell>
                 {key.lastFailedAt
                   ? new Date(key.lastFailedAt).toLocaleString()

@@ -1,9 +1,8 @@
 import { db } from "@/lib/db.sqlite";
-import { apiKeys } from "@/lib/db/schema";
+import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import { getSettings } from "@/lib/settings";
-import type { InferSelectModel } from "drizzle-orm";
-import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, lt, max, sql } from "drizzle-orm";
 
 /**
  * Gets the next working API key using a stateless, database-driven approach.
@@ -108,34 +107,51 @@ export async function resetKeyFailureCount(key: string): Promise<void> {
 }
 
 /**
- * Gets all API keys with their status information.
+ * Gets all API keys with their comprehensive usage statistics in a single, optimized query.
  *
- * @returns Array of key information objects
+ * @returns Array of key information objects, including aggregated stats.
  */
-export async function getAllKeys(): Promise<
-  {
-    key: string;
-    failCount: number;
-    isWorking: boolean;
-    lastUsed: Date | null;
-    lastChecked: Date | null;
-    lastFailedAt: Date | null;
-  }[]
-> {
+export async function getAllKeys() {
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
 
-  const keys = await db.select().from(apiKeys).orderBy(asc(apiKeys.createdAt));
+  // Subquery to aggregate request log data for each key
+  const keyStatsSubQuery = db
+    .select({
+      apiKey: requestLogs.apiKey,
+      totalRequests: count(requestLogs.id).as("totalRequests"),
+      successfulRequests:
+        sql<number>`SUM(CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 ELSE 0 END)`.as(
+          "successfulRequests"
+        ),
+      lastUsedInLog: max(requestLogs.createdAt).as("lastUsedInLog"),
+    })
+    .from(requestLogs)
+    .groupBy(requestLogs.apiKey)
+    .as("keyStats");
 
-  type ApiKeySelect = InferSelectModel<typeof apiKeys>;
+  const keysWithStats = await db
+    .select({
+      id: apiKeys.id,
+      key: apiKeys.key,
+      createdAt: apiKeys.createdAt,
+      lastChecked: apiKeys.lastChecked,
+      lastFailedAt: apiKeys.lastFailedAt,
+      failCount: apiKeys.failCount,
+      enabled: apiKeys.enabled,
+      totalRequests: sql<number>`COALESCE(${keyStatsSubQuery.totalRequests}, 0)`,
+      successfulRequests: sql<number>`COALESCE(${keyStatsSubQuery.successfulRequests}, 0)`,
+      lastUsed: sql<Date>`COALESCE(${keyStatsSubQuery.lastUsedInLog}, ${apiKeys.lastUsed})`,
+    })
+    .from(apiKeys)
+    .leftJoin(keyStatsSubQuery, eq(apiKeys.key, keyStatsSubQuery.apiKey))
+    .orderBy(desc(apiKeys.createdAt));
 
-  return keys.map((apiKey: ApiKeySelect) => ({
-    key: apiKey.key,
-    failCount: apiKey.failCount,
-    isWorking: apiKey.enabled && apiKey.failCount < maxFailures,
-    lastUsed: apiKey.lastUsed,
-    lastChecked: apiKey.lastChecked,
-    lastFailedAt: apiKey.lastFailedAt,
+  return keysWithStats.map((k) => ({
+    ...k,
+    isWorking: k.enabled && k.failCount < maxFailures,
+    failedRequests: k.totalRequests - k.successfulRequests,
+    lastUsed: k.lastUsed ? new Date(k.lastUsed) : null,
   }));
 }
 
