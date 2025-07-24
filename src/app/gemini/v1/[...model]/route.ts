@@ -7,5 +7,5 @@ export async function POST(request: NextRequest) {
   if (authError) {
     return authError;
   }
-  return proxyRequest(request, "/gemini");
+  return proxyRequest(request, "/gemini/");
 }

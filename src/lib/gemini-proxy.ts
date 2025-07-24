@@ -102,7 +102,40 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       fetchOptions.agent = new HttpsProxyAgent(settings.PROXY_URL);
     }
 
-    const geminiResponse = await fetch(geminiUrl, fetchOptions);
+    let geminiResponse: Response | null = null;
+    let lastError: Error | null = null;
+    const maxRetries = settings.MAX_FAILURES;
+    const retryDelay = 500;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        geminiResponse = await fetch(geminiUrl, fetchOptions);
+        // We only retry on specific network errors, so if we get a response,
+        // we exit the loop regardless of the status code.
+        break;
+      } catch (error: unknown) {
+        lastError = error as Error;
+        if (
+          error instanceof TypeError &&
+          error.message.includes("fetch failed")
+        ) {
+          logger.warn(
+            `Fetch failed, retrying... (${i + 1}/${maxRetries})`,
+            error
+          );
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        throw error; // Rethrow non-retryable errors
+      }
+    }
+
+    if (!geminiResponse) {
+      throw (
+        lastError ||
+        new Error("Failed to fetch from Gemini after multiple retries")
+      );
+    }
 
     // If the response is streaming, we pipe it through.
     if (
@@ -123,8 +156,24 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     if (!geminiResponse.ok) {
       statusCode = geminiResponse.status;
       await handleApiFailure(apiKey);
-      const errorBody = await geminiResponse.json();
-      const errorMessage = errorBody.error?.message || "Unknown error";
+      const errorText = await geminiResponse.text();
+      let errorBody: unknown = {};
+      let errorMessage = "Unknown error";
+
+      if (errorText) {
+        try {
+          errorBody = JSON.parse(errorText);
+          errorMessage =
+            (errorBody as { error?: { message?: string } })?.error?.message ||
+            "Unknown error";
+        } catch {
+          errorMessage = "Failed to parse error response from Gemini";
+          errorBody = { error: { message: errorText } };
+        }
+      } else {
+        errorMessage = `Received empty error response from Gemini with status ${geminiResponse.status}`;
+        errorBody = { error: { message: errorMessage } };
+      }
 
       await db.insert(errorLogs).values({
         apiKey: apiKey,
@@ -141,7 +190,9 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
         },
         "Error response from Google Gemini API"
       );
-      return NextResponse.json(errorBody, { status: geminiResponse.status });
+      return NextResponse.json(errorBody as { error?: { message?: string } }, {
+        status: geminiResponse.status,
+      });
     }
 
     // Success
@@ -202,7 +253,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       );
     }
 
-    logger.error({ error }, "Error proxying to Gemini");
+    logger.error(error, "Error proxying to Gemini");
     return NextResponse.json(
       { error: "Failed to proxy request to Gemini" },
       { status: 500 }
