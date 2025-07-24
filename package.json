@@ -9,6 +9,7 @@
         "start": "next start",
         "lint": "next lint",
         "db:migrate": "drizzle-kit migrate",
+        "db:migrate:prod": "node scripts/drizzle-migrate.mjs",
         "test": "vitest",
         "db:generate": "drizzle-kit generate"
     },
@@ -30,6 +31,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
+        "drizzle-kit": "^0.22.0",
         "drizzle-orm": "^0.31.2",
         "geist": "^1.4.2",
         "https-proxy-agent": "^7.0.6",
@@ -54,7 +56,6 @@
         "@types/react-dom": "^19",
         "@vitejs/plugin-react": "^4.7.0",
         "autoprefixer": "^10.4.21",
-        "drizzle-kit": "^0.22.0",
         "eslint": "^9",
         "eslint-config-next": "15.3.5",
         "husky": "^9.1.7",

@@ -1,62 +1,52 @@
-# syntax=docker/dockerfile:1
+# 1. Base Stage
 FROM node:20-alpine AS base
-
-# 1. Dependencies stage
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
+RUN apk add --no-cache libc6-compat
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package manager files
-COPY package.json pnpm-lock.yaml* ./
-# Install dependencies
-RUN corepack enable pnpm && pnpm i --frozen-lockfile
+# 2. Dependencies Stage (Install all dependencies)
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+# Use pnpm fetch to leverage Docker cache more effectively
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --recursive --prefer-offline
 
-# 2. Builder stage
+# 3. Builder Stage
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy only the necessary files for building
 COPY . .
+# Copy node_modules from the deps stage
+COPY --from=deps /app/node_modules ./node_modules
+# Set a temporary DB path for build-time and run migrations to create a valid DB schema.
+ENV DATABASE_URL="file:./build-time.db"
+RUN pnpm db:migrate:prod
+# Now, run the build with a valid database schema.
+RUN pnpm build
 
-# Set build-time env vars
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Build the project
-RUN corepack enable pnpm && pnpm build
-
-# 3. Runner stage
+# 4. Runner Stage
 FROM base AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Install su-exec for user switching
-RUN apk add --no-cache su-exec
-
-# Create a non-root user and group
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Copy the standalone output
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-# Copy the static assets
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy production dependencies
+COPY --from=builder /app/node_modules ./node_modules
+# Copy standalone output
+COPY --from=builder /app/.next/standalone ./
 # Copy public assets
 COPY --from=builder /app/public ./public
-# Copy entrypoint
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Copy static assets
+COPY --from=builder /app/.next/static ./.next/static
+# Copy migrations and scripts
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts ./scripts
 
-# Create a directory for persistent data
-RUN mkdir -p /app/data
-
-# Set ownership for the app directory, entrypoint will fix /app/data at runtime
-RUN chown -R nextjs:nodejs /app
+# Declare the volume for persistent data
+VOLUME ["/app/data"]
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# Run the entrypoint script to migrate and start
-CMD ["/app/entrypoint.sh"]
+# Start the application
+CMD ["sh", "./scripts/run.sh"]

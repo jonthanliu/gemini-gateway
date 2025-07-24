@@ -1,22 +1,13 @@
-# Git
+.dockerignore
+.env
+.env.*
 .git
 .gitignore
-
-# Docker
-Dockerfile
-.dockerignore
-docker-compose.yml
-
-# Node
-node_modules
 .next
-.env
-.env*.local
+.vscode
+docker-compose.yml
+Dockerfile
+local_data
+node_modules
 npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# Project specific
 README.md

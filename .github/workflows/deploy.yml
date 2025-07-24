@@ -4,7 +4,7 @@ name: Create and publish a Docker image
 # Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "develop"]
 
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
@@ -50,12 +50,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            ALLOWED_TOKENS=${{ secrets.ALLOWED_TOKENS }}
-            AUTH_TOKEN=${{ secrets.AUTH_TOKEN }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}
-            GEMINI_API_KEYS=${{ secrets.GEMINI_API_KEYS }}
             GOOGLE_API_HOST=${{ secrets.GOOGLE_API_HOST }}
-            MAX_FAILURES=${{ secrets.MAX_FAILURES }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
       # - name: Generate artifact attestation
