@@ -55,3 +55,4 @@ next-env.d.ts
 /prisma/dev.db-journal
 /prisma/schema.prisma.bak
 /.claude
+/data

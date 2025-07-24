@@ -4,6 +4,7 @@ CREATE TABLE `ApiKey` (
 	`createdAt` integer DEFAULT (strftime('%s', 'now')),
 	`lastUsed` integer,
 	`lastChecked` integer,
+	`lastFailedAt` integer,
 	`failCount` integer DEFAULT 0 NOT NULL,
 	`enabled` integer DEFAULT true NOT NULL
 );
