@@ -1,6 +1,6 @@
 # Gemini Gateway 🚀
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/jonthanliu/gemini-gateway/docker-image.yml?branch=master)](https://github.com/jonthanliu/gemini-gateway/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/jonthanliu/gemini-gateway/deploy.yml?branch=main)](https://github.com/jonthanliu/gemini-gateway/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/jonthanliu/gemini-gateway/pulls)
 
@@ -51,6 +51,8 @@ Deploying with Docker is the easiest way to get your Gemini Gateway up and runni
 
 3.  **Run with Docker Compose:**
 
+    It's recommended to mount a volume for persistent storage to preserve the database. The volume should be mounted at `/app/data`.
+
     ```bash
     docker-compose up --build -d
     ```
@@ -59,7 +61,7 @@ Deploying with Docker is the easiest way to get your Gemini Gateway up and runni
     - Open your browser and navigate to `http://YOUR_SERVER_IP:3000/admin`.
     - You'll be prompted for a password. **Enter a new, strong password** to secure the admin dashboard. This will become your permanent admin password.
     - Go to the **Keys** tab and add your Gemini API keys.
-    - Go to the **Configuration** tab and add "Allowed API Tokens". These are the tokens your client applications will use to authenticate.
+    - Go to the **Configuration** tab and add "Allowed API Tokens". These are the tokens your client applications will use to authenticate. **It is strongly recommended to set allowed tokens on first run, otherwise the API will be open to public use, which may lead to excessive Gemini traffic consumption.**
 
 Your gateway is now live and ready to serve requests!
 
@@ -109,6 +111,7 @@ For general-purpose clients like LobeChat or ChatGPT-Next-Web, you can use the O
 
 ## ⚠️ Important Notes & Disclaimer
 
+- **Password Recovery**: If you forget your admin password, you can log into the Docker host server and reset it. The simplest method is to delete the database file and redeploy the container. For advanced users, you can delete the `auth_token` entry from the `Setting` table in the database, then log in to the admin dashboard to set a new password.
 - **AI-Generated Code**: This project was primarily developed by an AI assistant. While it is functional, it may contain unexpected behaviors.
 - **Use at Your Own Risk**: This is an open-source project provided "as is". The authors and contributors are not responsible for any damages or losses resulting from its use, including but not to API key leakage or financial loss. Please review the code and security configurations carefully before deploying in a production environment.
 - **Contributions Welcome**: We welcome pull requests! Please note that contributions will also be reviewed by an AI.

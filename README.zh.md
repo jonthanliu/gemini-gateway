@@ -1,6 +1,6 @@
 # Gemini Gateway 🚀
 
-[![构建状态](https://img.shields.io/github/actions/workflow/status/jonthanliu/gemini-gateway/docker-image.yml?branch=master)](https://github.com/jonthanliu/gemini-gateway/actions)
+[![构建状态](https://img.shields.io/github/actions/workflow/status/jonthanliu/gemini-gateway/deploy.yml?branch=main)](https://github.com/jonthanliu/gemini-gateway/actions)
 [![许可证: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![欢迎 PR](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/jonthanliu/gemini-gateway/pulls)
 
@@ -51,6 +51,8 @@
 
 3.  **使用 Docker Compose 运行:**
 
+    建议挂载卷以实现持久化存储，从而保留数据库。该卷应挂载在 `/app/data`。
+
     ```bash
     docker-compose up --build -d
     ```
@@ -59,7 +61,7 @@
     - 打开浏览器并访问 `http://你的服务器IP:3000/admin`。
     - 系统将提示您输入密码。**输入一个新的、强密码**以保护管理仪表盘。这将成为您的永久管理员密码。
     - 转到 **Keys** 标签页并添加您的 Gemini API 密钥。
-    - 转到 **Configuration** 标签页并添加“允许的 API 令牌”。这些是您的客户端应用程序将用于身份验证的令牌。
+    - 转到 **Configuration** 标签页并添加“允许的 API 令牌”。这些是您的客户端应用程序将用于身份验证的令牌。**强烈建议在首次运行时设置允许的令牌，否则 API 将对公众开放，可能导致 Gemini 流量过度消耗。**
 
 您的网关现在已上线并准备好处理请求！
 
@@ -109,6 +111,7 @@ claude
 
 ## ⚠️ 重要提示与免责声明
 
+- **密码恢复**: 如果您忘记了管理员密码，可以登录到 Docker 主机服务器并重置。最简单的方法是删除数据库文件并重新部署容器。对于高级用户，您可以从数据库的 `Setting` 表中删除 `auth_token` 条目，然后登录到管理仪表盘以设置新密码。
 - **AI 生成的代码**: 本项目主要由 AI 助手开发。虽然功能可用，但可能包含意外行为。
 - **风险自负**: 这是一个“按原样”提供的开源项目。作者和贡献者不对因使用本项目而导致的任何损害或损失负责，包括但不限于 API 密钥泄露或经济损失。在生产环境中部署前，请仔细审查代码和安全配置。
 - **欢迎贡献**: 我们欢迎 Pull Request！请注意，贡献也将由 AI 进行审查。
