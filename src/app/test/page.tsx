@@ -96,7 +96,7 @@ export default function Home() {
   return (
     <main className="flex flex-col h-screen max-w-2xl mx-auto p-4">
       <header className="p-4 border-b">
-        <h1 className="text-2xl font-bold">Gemini Balance - Next.js Core</h1>
+        <h1 className="text-2xl font-bold">Gemini Gateway - Next.js Core</h1>
         <p className="text-sm text-gray-500">
           This interface demonstrates the core functionality of the AI gateway.
         </p>

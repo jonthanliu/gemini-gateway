@@ -10,9 +10,9 @@ export async function generateStaticParams() {
 }
 
 export const metadata: Metadata = {
-  title: "Gemini Balance - High-Performance AI Gateway",
+  title: "Gemini Gateway - High-Performance AI Gateway",
   description:
-    "A Next.js implementation of the Gemini Balance project, serving as an intelligent AI gateway.",
+    "A Next.js implementation of the Gemini Gateway project, serving as an intelligent AI gateway.",
 };
 
 export default function RootLayout({
