@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 import { Wand2, X } from "lucide-react";
 import { useState } from "react";
 

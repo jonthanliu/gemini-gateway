@@ -1,7 +1,12 @@
 import { db } from "@/lib/db.sqlite";
+import { settings as settingsTable } from "@/lib/db/schema";
+import logger from "@/lib/logger";
 import type { InferSelectModel } from "drizzle-orm";
-import { settings as settingsTable } from "./db/schema";
-import logger from "./logger";
+
+// Cache settings to avoid frequent database calls
+let settingsCache: ParsedSettings | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // 定义默认配置
 const defaultSettings = {
@@ -38,9 +43,16 @@ type Settings = typeof defaultSettings;
 /**
  * 获取所有配置项。
  * 从数据库加载，并处理环境变量和默认值。
- * Note: Caching was removed to prevent stale data issues in serverless environments.
+ * Implements a cache to reduce database lookups.
  */
 export async function getSettings(): Promise<ParsedSettings> {
+  const now = Date.now();
+  if (settingsCache && now - cacheTimestamp < CACHE_DURATION) {
+    logger.debug("Returning cached settings");
+    return settingsCache;
+  }
+
+  logger.debug("Fetching settings from database");
   let settingsMap = new Map<string, string>();
   type SettingSelect = InferSelectModel<typeof settingsTable>;
   try {
@@ -73,7 +85,10 @@ export async function getSettings(): Promise<ParsedSettings> {
     resolvedSettings[key] = value;
   }
 
-  return parseSettings(resolvedSettings);
+  const parsed = parseSettings(resolvedSettings);
+  settingsCache = parsed;
+  cacheTimestamp = now;
+  return parsed;
 }
 
 function parseSettings(settings: Settings): ParsedSettings {
@@ -91,10 +106,12 @@ function parseSettings(settings: Settings): ParsedSettings {
 }
 
 /**
- * 清空配置缓存（已废弃，因为缓存已被移除）。
+ * 清空配置缓存。
  */
 export function resetSettings(): void {
-  // No-op, cache was removed.
+  logger.info("Settings cache cleared");
+  settingsCache = null;
+  cacheTimestamp = 0;
 }
 
 /**
@@ -107,5 +124,5 @@ export async function updateSetting(key: string, value: string) {
     target: settingsTable.key,
     set: { value },
   });
-  // No need to call resetSettings() as the cache has been removed.
+  resetSettings(); // Invalidate the cache
 }

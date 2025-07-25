@@ -1,10 +1,10 @@
-import { callGeminiApi } from "@/lib/gemini-client";
+import { callGeminiApi } from "@/lib/google/gemini-client";
 import {
   OpenAIChatMessage,
   OpenAIChatRequest,
   geminiToOpenAiStreamChunk,
-} from "@/lib/google-adapter";
-import { callImagenApi } from "@/lib/imagen-client";
+} from "@/lib/google/google-adapter";
+import { callImagenApi } from "@/lib/google/imagen-client";
 import logger from "@/lib/logger";
 import {
   Content,

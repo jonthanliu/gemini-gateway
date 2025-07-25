@@ -52,7 +52,7 @@ type ErrorLog = {
 
 type Log = RequestLog | ErrorLog;
 
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatApiKey } from "@/lib/utils";
 
 interface LogViewerProps {

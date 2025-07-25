@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 import { ClipboardCheck, RefreshCw, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { deleteApiKeys, resetKeysFailures, verifyApiKeys } from "./actions";

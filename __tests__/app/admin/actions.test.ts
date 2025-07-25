@@ -1,9 +1,9 @@
 import { addApiKeys, updateSettings } from "@/app/[lang]/admin/actions";
+import type { ParsedSettings } from "@/lib/config/settings";
+import * as settingsService from "@/lib/config/settings";
 import * as crypto from "@/lib/crypto";
 import { apiKeys, settings as settingsTable } from "@/lib/db/schema";
 import * as keyManager from "@/lib/key-manager";
-import type { ParsedSettings } from "@/lib/settings";
-import * as settingsService from "@/lib/settings";
 import * as cache from "next/cache";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,10 +24,13 @@ vi.mock("@/lib/get-locale", () => ({
   getLocale: vi.fn().mockResolvedValue("en"),
 }));
 vi.mock("@/lib/services/key.service");
-vi.mock("@/lib/settings");
+vi.mock("@/lib/config/settings");
 vi.mock("@/lib/key-manager");
 vi.mock("next/cache");
 vi.mock("@/lib/crypto");
+vi.mock("next/headers", () => ({
+  headers: vi.fn(() => new Map()),
+}));
 
 const mocks = vi.hoisted(() => {
   return {
@@ -38,7 +41,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("db", () => ({
+vi.mock("@/lib/db.sqlite", () => ({
   db: mocks.db,
 }));
 
@@ -66,7 +69,9 @@ describe("Admin Actions", () => {
         { key: "key2" },
         { key: "key3" },
       ]);
-      expect(result.success).toBe("2 keys added. 1 duplicates found.");
+      expect(result.success).toBe(
+        "2 new key(s) added. 1 key(s) were duplicates or already existed."
+      );
       expect(keyManager.resetKeyManager).toHaveBeenCalled();
       expect(cache.revalidatePath).toHaveBeenCalledWith("/admin");
     });
@@ -103,7 +108,7 @@ describe("Admin Actions", () => {
         key: "TOOLS_CODE_EXECUTION_ENABLED",
         value: "true",
       });
-      expect(result.success).toBe("Settings updated.");
+      expect(result.success).toBe("Configuration updated successfully!");
       expect(settingsService.resetSettings).toHaveBeenCalled();
       expect(keyManager.resetKeyManager).toHaveBeenCalled();
       expect(cache.revalidatePath).toHaveBeenCalledWith("/admin/config");

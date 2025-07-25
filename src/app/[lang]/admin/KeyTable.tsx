@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 import { getAllKeys } from "@/lib/services/key.service";
 import { formatApiKey } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";

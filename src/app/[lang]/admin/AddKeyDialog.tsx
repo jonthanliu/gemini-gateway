@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 import { useState, useTransition } from "react";
 import { addApiKeys } from "./actions";
 

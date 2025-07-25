@@ -1,4 +1,11 @@
+import { getSettings } from "@/lib/config/settings";
 import { db } from "@/lib/db.sqlite";
+import { errorLogs, requestLogs } from "@/lib/db/schema";
+import {
+  buildGeminiRequest,
+  formatGoogleModelsToOpenAI,
+} from "@/lib/google/google-adapter";
+import logger from "@/lib/logger";
 import {
   getNextWorkingKey,
   handleApiFailure,
@@ -7,13 +14,6 @@ import {
 import { Agent } from "http";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { NextRequest, NextResponse } from "next/server";
-import { errorLogs, requestLogs } from "./db/schema";
-import {
-  buildGeminiRequest,
-  formatGoogleModelsToOpenAI,
-} from "./google-adapter";
-import logger from "./logger";
-import { getSettings } from "./settings";
 
 const GOOGLE_API_HOST =
   process.env.GOOGLE_API_HOST || "https://generativelanguage.googleapis.com";
@@ -69,13 +69,24 @@ export function createReadableStream(
 
 export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   const startTime = Date.now();
+  const timings = {
+    total: 0,
+    getKey: 0,
+    getSettings: 0,
+    buildRequest: 0,
+    fetch: 0,
+    dbLogging: 0,
+    dbUpdate: 0,
+  };
   let apiKey = "unknown";
   let model = "unknown";
   let statusCode: number | null = null;
   let isSuccess = false;
 
   try {
+    let t = Date.now();
     apiKey = await getNextWorkingKey();
+    timings.getKey = Date.now() - t;
 
     // Reconstruct the original Gemini API URL
     const url = new URL(request.url);
@@ -85,16 +96,24 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       url.search ? url.search + "&" : "?"
     }key=${apiKey}`;
 
-    const requestBody = await request.json();
-    const geminiRequestBody = await buildGeminiRequest(model, requestBody);
+    let geminiRequestBody: unknown;
+    const t_build = Date.now();
+    if (["POST", "PUT", "PATCH"].includes(request.method)) {
+      const requestBody = await request.json();
+      geminiRequestBody = await buildGeminiRequest(model, requestBody);
+    }
+    timings.buildRequest = Date.now() - t_build;
+
+    const t_settings = Date.now();
     const settings = await getSettings();
+    timings.getSettings = Date.now() - t_settings;
 
     const fetchOptions: FetchOptions = {
-      method: "POST",
+      method: request.method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(geminiRequestBody),
+      body: geminiRequestBody ? JSON.stringify(geminiRequestBody) : null,
       duplex: "half",
     };
 
@@ -107,6 +126,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     const maxRetries = settings.MAX_FAILURES;
     const retryDelay = 500;
 
+    t = Date.now();
     for (let i = 0; i < maxRetries; i++) {
       try {
         geminiResponse = await fetch(geminiUrl, fetchOptions);
@@ -129,6 +149,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
         throw error; // Rethrow non-retryable errors
       }
     }
+    timings.fetch = Date.now() - t;
 
     if (!geminiResponse) {
       throw (
@@ -155,7 +176,9 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Check if the response from Gemini is not OK
     if (!geminiResponse.ok) {
       statusCode = geminiResponse.status;
+      t = Date.now();
       await handleApiFailure(apiKey);
+      timings.dbUpdate = Date.now() - t;
       const errorText = await geminiResponse.text();
       let errorBody: unknown = {};
       let errorMessage = "Unknown error";
@@ -198,7 +221,9 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Success
     isSuccess = true;
     statusCode = geminiResponse.status;
+    t = Date.now();
     await resetKeyFailureCount(apiKey);
+    timings.dbUpdate = Date.now() - t;
 
     // Otherwise, we return the JSON response directly.
     const data = await geminiResponse.json();
@@ -261,13 +286,25 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   } finally {
     if (statusCode) {
       const latency = Date.now() - startTime;
-      await db.insert(requestLogs).values({
-        apiKey: apiKey,
-        model: model,
-        statusCode: statusCode,
-        isSuccess: isSuccess,
-        latency: latency,
-      });
+      timings.total = latency;
+
+      // Asynchronously log the request without awaiting
+      (async () => {
+        const t = Date.now();
+        try {
+          await db.insert(requestLogs).values({
+            apiKey: apiKey,
+            model: model,
+            statusCode: statusCode,
+            isSuccess: isSuccess,
+            latency: latency,
+          });
+          timings.dbLogging = Date.now() - t;
+          logger.info({ timings }, "Request performance metrics");
+        } catch (error) {
+          logger.error(error, "Failed to write request log to database");
+        }
+      })();
     }
   }
 }

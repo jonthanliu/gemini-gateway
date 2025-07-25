@@ -2,7 +2,7 @@
 
 import { login } from "@/app/auth/actions";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 import Link from "next/link";
 import { Suspense, useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";

@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  ParsedSettings,
+  resetSettings,
+  updateSetting as updateSettingInDb,
+} from "@/lib/config/settings";
 import { hashToken } from "@/lib/crypto";
 import { db } from "@/lib/db.sqlite";
 import {
@@ -8,15 +13,10 @@ import {
   requestLogs,
   settings as settingsTable,
 } from "@/lib/db/schema";
-import { getDictionary } from "@/lib/get-dictionary";
-import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { getLocale } from "@/lib/i18n/get-locale";
 import { resetKeyManager } from "@/lib/key-manager";
 import { resetKeyFailureCount, verifyKey } from "@/lib/services/key.service";
-import {
-  ParsedSettings,
-  resetSettings,
-  updateSetting as updateSettingInDb,
-} from "@/lib/settings";
 import {
   and,
   count,

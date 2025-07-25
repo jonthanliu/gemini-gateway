@@ -1,7 +1,7 @@
 // src/lib/google-adapter.ts
 
+import { getSettings } from "@/lib/config/settings";
 import type { Content, Part } from "@google/generative-ai";
-import { getSettings } from "./settings";
 
 interface GeminiTool {
   functionDeclarations?: Record<string, unknown>[];

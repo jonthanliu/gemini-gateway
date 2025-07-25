@@ -1,4 +1,4 @@
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated } from "@/lib/auth/auth";
 import { getNextWorkingKey } from "@/lib/services/key.service";
 import { NextRequest, NextResponse } from "next/server";
 

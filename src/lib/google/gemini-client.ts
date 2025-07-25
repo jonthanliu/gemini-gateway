@@ -1,3 +1,4 @@
+import { getSettings } from "@/lib/config/settings";
 import { db } from "@/lib/db.sqlite";
 import { apiKeys, errorLogs, requestLogs } from "@/lib/db/schema";
 import {
@@ -5,7 +6,6 @@ import {
   handleApiFailure,
   resetKeyFailureCount,
 } from "@/lib/services/key.service";
-import { getSettings } from "@/lib/settings";
 import {
   EnhancedGenerateContentResponse,
   GenerateContentRequest,

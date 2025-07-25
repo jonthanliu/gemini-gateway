@@ -24,7 +24,7 @@ interface SystemStats {
   "24h": { total: number; failed: number };
 }
 
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 
 interface DashboardStatsProps {
   keyStats: KeyStats;

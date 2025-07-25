@@ -1,7 +1,7 @@
+import { updateSetting } from "@/lib/config/settings";
 import { db } from "@/lib/db.sqlite";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import { getAllKeys } from "@/lib/services/key.service";
-import { updateSetting } from "@/lib/settings";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 describe("Key Service - getAllKeys", () => {

@@ -28,7 +28,7 @@ type Details = {
   logs: Log[];
 };
 
-import { Dictionary } from "@/lib/dictionaries";
+import { Dictionary } from "@/lib/i18n/dictionaries";
 
 interface KeyUsageDetailProps {
   apiKey: string;

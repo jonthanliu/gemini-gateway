@@ -1,7 +1,7 @@
+import { getSettings } from "@/lib/config/settings";
 import { db } from "@/lib/db.sqlite";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
-import { getSettings } from "@/lib/settings";
 import { and, asc, count, desc, eq, gte, lt, max, sql } from "drizzle-orm";
 
 /**
@@ -15,25 +15,31 @@ export async function getNextWorkingKey(): Promise<string> {
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
 
-  const validKeys = await db
-    .select()
-    .from(apiKeys)
-    .where(and(eq(apiKeys.enabled, true), lt(apiKeys.failCount, maxFailures)))
-    .orderBy(asc(apiKeys.lastUsed))
-    .limit(1);
+  const selectedKey = await db.transaction(async (tx) => {
+    const validKeys = await tx
+      .select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.enabled, true), lt(apiKeys.failCount, maxFailures)))
+      .orderBy(asc(apiKeys.lastUsed))
+      .limit(1);
 
-  if (validKeys.length === 0) {
-    throw new Error(
-      "No API keys available. Please check key validity or reset failure counts."
-    );
-  }
+    if (validKeys.length === 0) {
+      // We need to throw an error that the transaction can catch and rollback.
+      // A custom error type might be even better.
+      throw new Error(
+        "No API keys available. Please check key validity or reset failure counts."
+      );
+    }
 
-  const selectedKey = validKeys[0];
+    const keyToUse = validKeys[0];
 
-  await db
-    .update(apiKeys)
-    .set({ lastUsed: new Date() })
-    .where(eq(apiKeys.id, selectedKey.id));
+    await tx
+      .update(apiKeys)
+      .set({ lastUsed: new Date() })
+      .where(eq(apiKeys.id, keyToUse.id));
+
+    return keyToUse;
+  });
 
   logger.info(
     { key: `...${selectedKey.key.slice(-4)}` },
@@ -50,22 +56,14 @@ export async function getNextWorkingKey(): Promise<string> {
  */
 export async function handleApiFailure(key: string): Promise<void> {
   try {
-    const currentKeyResult = await db
-      .select({ failCount: apiKeys.failCount })
-      .from(apiKeys)
+    await db
+      .update(apiKeys)
+      .set({
+        failCount: sql`${apiKeys.failCount} + 1`,
+        lastChecked: new Date(),
+        lastFailedAt: new Date(),
+      })
       .where(eq(apiKeys.key, key));
-
-    if (currentKeyResult.length > 0) {
-      const currentKey = currentKeyResult[0];
-      await db
-        .update(apiKeys)
-        .set({
-          failCount: currentKey.failCount + 1,
-          lastChecked: new Date(),
-          lastFailedAt: new Date(),
-        })
-        .where(eq(apiKeys.key, key));
-    }
 
     logger.warn(
       { key: `...${key.slice(-4)}` },

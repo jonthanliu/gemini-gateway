@@ -1,10 +1,10 @@
 "use server";
 
+import { getSettings, updateSetting } from "@/lib/config/settings";
 import { hashToken, verifyToken } from "@/lib/crypto";
-import { getDictionary } from "@/lib/get-dictionary";
-import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { getLocale } from "@/lib/i18n/get-locale";
 import logger from "@/lib/logger";
-import { getSettings, updateSetting } from "@/lib/settings";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

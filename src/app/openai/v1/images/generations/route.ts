@@ -1,5 +1,5 @@
-import { isAuthenticated } from "@/lib/auth";
-import { callImagenApi } from "@/lib/imagen-client";
+import { isAuthenticated } from "@/lib/auth/auth";
+import { callImagenApi } from "@/lib/google/imagen-client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest): Promise<Response> {

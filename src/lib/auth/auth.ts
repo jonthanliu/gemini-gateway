@@ -1,6 +1,6 @@
+import { getSettings } from "@/lib/config/settings";
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
-import { getSettings } from "./settings";
 
 /**
  * Extracts the API key from the request headers or query parameters.
@@ -61,7 +61,7 @@ export async function isAuthenticated(
   try {
     const settings = await getSettings();
     const allowedTokens = settings.ALLOWED_TOKENS.split(",")
-      .map((t) => t.trim())
+      .map((t: string) => t.trim())
       .filter(Boolean);
 
     // If ALLOWED_TOKENS is not configured, deny all requests for security.

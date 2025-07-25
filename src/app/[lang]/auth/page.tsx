@@ -1,5 +1,5 @@
 import { Locale } from "@/i18n-config";
-import { getDictionary } from "@/lib/get-dictionary";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import LoginForm from "./LoginForm";
 
 export default async function AuthPage({

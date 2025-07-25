@@ -1,10 +1,10 @@
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated } from "@/lib/auth/auth";
+import { getSettings } from "@/lib/config/settings";
 import {
   createReadableStream,
   getRequestBody,
   getRequestHeaders,
-} from "@/lib/gemini-proxy";
-import { getSettings } from "@/lib/settings";
+} from "@/lib/proxy/gemini-proxy";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest): Promise<Response> {

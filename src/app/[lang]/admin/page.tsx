@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Locale } from "@/i18n-config";
-import { getDictionary } from "@/lib/get-dictionary";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getAllKeys } from "@/lib/services/key.service";
 import { getKeyStats, getSystemStats } from "./actions";
 import { AddKeyDialog } from "./AddKeyDialog";
