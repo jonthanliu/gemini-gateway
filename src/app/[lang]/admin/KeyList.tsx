@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Dictionary } from "@/lib/i18n/dictionaries";
 import { ClipboardCheck, RefreshCw, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { deleteApiKeys, resetKeysFailures, verifyApiKeys } from "./actions";
 import { Key, KeyTable } from "./KeyTable";
 
@@ -72,14 +73,32 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
     action: (keys: string[]) => Promise<ActionResult>,
     confirmMessage?: string
   ) => {
-    if (confirmMessage && !confirm(confirmMessage)) return;
+    if (confirmMessage) {
+      toast(confirmMessage, {
+        action: {
+          label: dictionary.confirm,
+          onClick: () => {
+            startTransition(async () => {
+              const result = await action(Array.from(selectedKeys));
+              if (result.error) {
+                toast.error(`${dictionary.error}: ${result.error}`);
+              } else {
+                toast.success(result.success || "Action completed.");
+                setSelectedKeys(new Set());
+              }
+            });
+          },
+        },
+      });
+      return;
+    }
 
     startTransition(async () => {
       const result = await action(Array.from(selectedKeys));
       if (result.error) {
-        alert(`${dictionary.error}: ${result.error}`);
+        toast.error(`${dictionary.error}: ${result.error}`);
       } else {
-        alert(result.success || "Action completed.");
+        toast.success(result.success || "Action completed.");
         setSelectedKeys(new Set()); // Clear selection after action
       }
     });

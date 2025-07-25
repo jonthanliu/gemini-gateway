@@ -28,6 +28,7 @@ import { getAllKeys } from "@/lib/services/key.service";
 import { formatApiKey } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { deleteApiKeys, resetKeysFailures, verifyApiKeys } from "./actions";
 import { KeyUsageDetail } from "./KeyUsageDetail";
 
@@ -56,20 +57,26 @@ export function KeyTable({
       "{key}",
       formatApiKey(key)
     );
-    if (confirm(confirmMessage)) {
-      startTransition(async () => {
-        const result = await deleteApiKeys([key]);
-        if (result.error) alert(`${dictionary.error}: ${result.error}`);
-        else alert(result.success);
-      });
-    }
+    toast(confirmMessage, {
+      action: {
+        label: dictionary.confirm,
+        onClick: () => {
+          startTransition(async () => {
+            const result = await deleteApiKeys([key]);
+            if (result.error)
+              toast.error(`${dictionary.error}: ${result.error}`);
+            else toast.success(result.success);
+          });
+        },
+      },
+    });
   };
 
   const handleReset = (key: string) => {
     startTransition(async () => {
       const result = await resetKeysFailures([key]);
-      if (result.error) alert(`${dictionary.error}: ${result.error}`);
-      else alert(result.success);
+      if (result.error) toast.error(`${dictionary.error}: ${result.error}`);
+      else toast.success(result.success);
     });
   };
 
@@ -77,7 +84,7 @@ export function KeyTable({
     startTransition(async () => {
       const result = await verifyApiKeys([key]);
       if (result.error) {
-        alert(`${dictionary.error}: ${result.error}`);
+        toast.error(`${dictionary.error}: ${result.error}`);
       } else {
         const keyResult = result.results?.[0];
         if (keyResult) {
@@ -87,9 +94,9 @@ export function KeyTable({
           const message = dictionary.success.verificationResult
             .replace("{key}", formatApiKey(keyResult.key))
             .replace("{status}", status);
-          alert(message);
+          toast.success(message);
         } else if (result.success) {
-          alert(result.success);
+          toast.success(result.success);
         }
       }
     });

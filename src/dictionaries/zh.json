@@ -204,7 +204,8 @@
                 "model": "模型",
                 "status": "状态",
                 "noLogs": "此密钥没有最近的日志。"
-            }
+            },
+            "confirm": "确定"
         }
     },
     "logs": {
@@ -255,7 +256,8 @@
         "deleteSelected": "删除所选",
         "clearing": "清除中...",
         "clearAll": "全部清除",
-        "logs": "日志"
+        "logs": "日志",
+        "confirm": "确定"
     },
     "loginForm": {
         "title": "管理员访问",

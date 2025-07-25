@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ParsedSettings } from "@/lib/config/settings";
 import { Dictionary } from "@/lib/i18n/dictionaries";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { updateSettings } from "./actions";
 import { DynamicListInput } from "./DynamicListInput";
 
@@ -57,12 +58,12 @@ export function ConfigForm({ settings, dictionary }: ConfigFormProps) {
         };
         const result = await updateSettings(dataToSave);
         if (result.error) {
-          alert(`${dictionary.error.failedToUpdate}: ${result.error}`);
+          toast.error(`${dictionary.error.failedToUpdate}: ${result.error}`);
         } else {
-          alert(result.success);
+          toast.success(result.success);
         }
       } catch {
-        alert(dictionary.error.jsonError);
+        toast.error(dictionary.error.jsonError);
       }
     });
   };

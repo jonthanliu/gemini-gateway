@@ -204,7 +204,8 @@
                 "model": "Model",
                 "status": "Status",
                 "noLogs": "No recent logs for this key."
-            }
+            },
+            "confirm": "Confirm"
         }
     },
     "logs": {
@@ -255,7 +256,8 @@
         "deleteSelected": "Delete Selected",
         "clearing": "Clearing...",
         "clearAll": "Clear All",
-        "logs": "Logs"
+        "logs": "Logs",
+        "confirm": "Confirm"
     },
     "loginForm": {
         "title": "Admin Access",

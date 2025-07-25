@@ -28,8 +28,10 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Eye, Trash2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/router";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { clearAllLogs, deleteLogs } from "./actions";
 
 // Types remain the same
@@ -134,12 +136,17 @@ export function LogViewer({
       "{logType}",
       logType
     );
-    if (confirm(confirmMessage)) {
-      startTransition(async () => {
-        await clearAllLogs(logType);
-        alert(`${logType} logs cleared.`);
-      });
-    }
+    toast(confirmMessage, {
+      action: {
+        label: dictionary.confirm,
+        onClick: () => {
+          startTransition(async () => {
+            await clearAllLogs(logType);
+            toast.success(`${logType} logs cleared.`);
+          });
+        },
+      },
+    });
   };
 
   const handleLogSelectionChange = (logId: number, isSelected: boolean) => {
@@ -167,17 +174,25 @@ export function LogViewer({
       "{count}",
       selectedLogIds.size.toString()
     );
-    if (confirm(confirmMessage)) {
-      startTransition(async () => {
-        const result = await deleteLogs(Array.from(selectedLogIds), logType);
-        if (result.error) {
-          alert(`${dictionary.error}: ${result.error}`);
-        } else {
-          alert(result.success);
-          setSelectedLogIds(new Set());
-        }
-      });
-    }
+    toast(confirmMessage, {
+      action: {
+        label: dictionary.confirm,
+        onClick: () => {
+          startTransition(async () => {
+            const result = await deleteLogs(
+              Array.from(selectedLogIds),
+              logType
+            );
+            if (result.error) {
+              toast.error(`${dictionary.error}: ${result.error}`);
+            } else {
+              toast.success(result.success);
+              setSelectedLogIds(new Set());
+            }
+          });
+        },
+      },
+    });
   };
 
   const totalPages = Math.ceil(total / limit);
