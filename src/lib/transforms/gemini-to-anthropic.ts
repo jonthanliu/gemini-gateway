@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import * as Gemini from "@google/generative-ai";
 
 /**
@@ -42,70 +43,84 @@ export function streamGeminiToAnthropic(
       let totalOutputTokens = 0;
       let finalStopReason = null;
 
-      for await (const chunk of geminiStream) {
-        const candidate = chunk.response.candidates?.[0];
-        if (!candidate) continue;
+      try {
+        for await (const chunk of geminiStream) {
+          const candidate = chunk.response.candidates?.[0];
+          if (!candidate) continue;
 
-        totalOutputTokens +=
-          chunk.response.usageMetadata?.candidatesTokenCount || 0;
+          totalOutputTokens +=
+            chunk.response.usageMetadata?.candidatesTokenCount || 0;
 
-        // Safely access and iterate over parts, as a chunk may have no content
-        // or be stopped for safety reasons.
-        const parts = candidate.content?.parts;
-        if (parts && parts.length > 0) {
-          for (const part of parts) {
-            if (part.text) {
-              // 2. Handle text block
-              writeEvent(controller, "content_block_start", {
-                type: "content_block_start",
-                index: blockIndex,
-                content_block: { type: "text", text: "" },
-              });
-              writeEvent(controller, "content_block_delta", {
-                type: "content_block_delta",
-                index: blockIndex,
-                delta: { type: "text_delta", text: part.text },
-              });
-              writeEvent(controller, "content_block_stop", {
-                type: "content_block_stop",
-                index: blockIndex,
-              });
-              blockIndex++;
-            } else if (part.functionCall) {
-              // 3. Handle tool use block
-              writeEvent(controller, "content_block_start", {
-                type: "content_block_start",
-                index: blockIndex,
-                content_block: {
-                  type: "tool_use",
-                  id: part.functionCall.name,
-                  name: part.functionCall.name,
-                  input: {},
-                },
-              });
-              writeEvent(controller, "content_block_delta", {
-                type: "content_block_delta",
-                index: blockIndex,
-                delta: {
-                  type: "input_json_delta",
-                  partial_json: JSON.stringify(part.functionCall.args),
-                },
-              });
-              writeEvent(controller, "content_block_stop", {
-                type: "content_block_stop",
-                index: blockIndex,
-              });
-              blockIndex++;
+          // Safely access and iterate over parts, as a chunk may have no content
+          // or be stopped for safety reasons.
+          const parts = candidate.content?.parts;
+          if (parts && parts.length > 0) {
+            for (const part of parts) {
+              if (part.text) {
+                // 2. Handle text block
+                writeEvent(controller, "content_block_start", {
+                  type: "content_block_start",
+                  index: blockIndex,
+                  content_block: { type: "text", text: "" },
+                });
+                writeEvent(controller, "content_block_delta", {
+                  type: "content_block_delta",
+                  index: blockIndex,
+                  delta: { type: "text_delta", text: part.text },
+                });
+                writeEvent(controller, "content_block_stop", {
+                  type: "content_block_stop",
+                  index: blockIndex,
+                });
+                blockIndex++;
+              } else if (part.functionCall) {
+                // 3. Handle tool use block
+                writeEvent(controller, "content_block_start", {
+                  type: "content_block_start",
+                  index: blockIndex,
+                  content_block: {
+                    type: "tool_use",
+                    id: part.functionCall.name,
+                    name: part.functionCall.name,
+                    input: {},
+                  },
+                });
+                writeEvent(controller, "content_block_delta", {
+                  type: "content_block_delta",
+                  index: blockIndex,
+                  delta: {
+                    type: "input_json_delta",
+                    partial_json: JSON.stringify(part.functionCall.args),
+                  },
+                });
+                writeEvent(controller, "content_block_stop", {
+                  type: "content_block_stop",
+                  index: blockIndex,
+                });
+                blockIndex++;
+              }
             }
           }
-        }
 
-        if (candidate.finishReason) {
-          finalStopReason =
-            (candidate.finishReason as string) === "TOOL_CALL"
-              ? "tool_use"
-              : "end_turn";
+          if (candidate.finishReason) {
+            finalStopReason =
+              (candidate.finishReason as string) === "TOOL_CALL"
+                ? "tool_use"
+                : "end_turn";
+          }
         }
+      } catch (error) {
+        logger.error({ err: error }, "Error processing Gemini stream");
+        writeEvent(controller, "error", {
+          type: "error",
+          error: {
+            type: "internal_server_error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "An unknown error occurred while processing the stream.",
+          },
+        });
       }
 
       // 4. Send message_delta with final usage
