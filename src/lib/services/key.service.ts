@@ -4,22 +4,20 @@ import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import { and, count, desc, eq, gte, lt, max, sql } from "drizzle-orm";
 
-export const keyUsage = new Map<string, Date>();
 
 /**
- * Gets the next working API key using an in-memory LRU strategy.
+ * Gets the next working API key using a stateless, random-choice strategy.
+ * This is efficient and works well for load balancing in serverless environments.
  *
  * @returns A valid API key string
  * @throws Error if no valid keys are available
  */
-export async function getNextWorkingKey(
-  usage: Map<string, Date> = keyUsage
-): Promise<string> {
+export async function getNextWorkingKey(): Promise<string> {
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
 
   const validKeys = await db
-    .select()
+    .select({ key: apiKeys.key })
     .from(apiKeys)
     .where(and(eq(apiKeys.enabled, true), lt(apiKeys.failCount, maxFailures)));
 
@@ -29,19 +27,13 @@ export async function getNextWorkingKey(
     );
   }
 
-  // Sort keys by last used time from our in-memory map
-  validKeys.sort((a, b) => {
-    const aTime = usage.get(a.key)?.getTime() || 0;
-    const bTime = usage.get(b.key)?.getTime() || 0;
-    return aTime - bTime;
-  });
-
-  const keyToUse = validKeys[0];
-  usage.set(keyToUse.key, new Date());
+  // Randomly select a key from the pool of valid keys.
+  // This is a simple and effective load balancing strategy for stateless environments.
+  const keyToUse = validKeys[Math.floor(Math.random() * validKeys.length)];
 
   logger.info(
     { key: `...${keyToUse.key.slice(-4)}` },
-    "Selected API key using in-memory LRU strategy."
+    "Selected API key using stateless random choice strategy."
   );
 
   return keyToUse.key;

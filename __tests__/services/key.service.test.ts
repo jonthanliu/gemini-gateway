@@ -1,8 +1,66 @@
 import { updateSetting } from "@/lib/config/settings";
 import { db } from "@/lib/db.sqlite";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
-import { getAllKeys } from "@/lib/services/key.service";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { getNextWorkingKey, getAllKeys } from "@/lib/services/key.service";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
+
+describe("Key Service - getNextWorkingKey", () => {
+  beforeEach(async () => {
+    // Set up a clean state for each test
+    await db.delete(apiKeys);
+    await updateSetting("MAX_FAILURES", "3");
+
+    // Insert test data: 3 working keys, 1 disabled, 1 failed
+    await db.insert(apiKeys).values([
+      { id: 1, key: "key-working-01", failCount: 0, enabled: true },
+      { id: 2, key: "key-working-02", failCount: 1, enabled: true },
+      { id: 3, key: "key-working-03", failCount: 2, enabled: true },
+      { id: 4, key: "key-disabled-01", failCount: 0, enabled: false },
+      { id: 5, key: "key-failed-01", failCount: 4, enabled: true },
+    ]);
+  });
+
+  afterEach(async () => {
+    // Clean up the database after each test
+    await db.delete(apiKeys);
+  });
+
+  it("should only return a working key", async () => {
+    const key = await getNextWorkingKey();
+    expect(key).toMatch(/key-working-\d{2}/);
+  });
+
+  it("should never return a disabled or failed key", async () => {
+    for (let i = 0; i < 20; i++) {
+      const key = await getNextWorkingKey();
+      expect(key).not.toBe("key-disabled-01");
+      expect(key).not.toBe("key-failed-01");
+    }
+  });
+
+  it("should return different keys over multiple calls, demonstrating randomness", async () => {
+    const results = new Set<string>();
+    for (let i = 0; i < 100; i++) {
+      results.add(await getNextWorkingKey());
+    }
+    // With 3 available keys, after 100 calls, we expect to have seen more than 1 unique key.
+    // This probabilistically checks for randomness.
+    expect(results.size).toBeGreaterThan(1);
+    // It should contain all possible working keys
+    expect(results.has("key-working-01")).toBe(true);
+    expect(results.has("key-working-02")).toBe(true);
+    expect(results.has("key-working-03")).toBe(true);
+  });
+
+  it("should throw an error when no keys are available", async () => {
+    // Delete all keys to simulate a no-key scenario
+    await db.delete(apiKeys);
+    await expect(getNextWorkingKey()).rejects.toThrow(
+      "No API keys available"
+    );
+  });
+});
+
 
 describe("Key Service - getAllKeys", () => {
   beforeEach(async () => {

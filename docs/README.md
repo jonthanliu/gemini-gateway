@@ -34,11 +34,11 @@ This version goes beyond a simple proxy, offering a robust feature set including
 To understand the project, we recommend exploring the files in the following order:
 
 1.  **`src/lib/db/schema.ts`**: Defines the database schema using Drizzle ORM for storing API keys (`ApiKey`), dynamic configurations (`Setting`), request logs (`RequestLog`), and error logs (`ErrorLog`).
-2.  **`src/lib/settings.ts`**: The service responsible for fetching all application settings from the database. This is the single source of truth for configuration.
-3.  **`src/lib/key-manager.ts`**: The `KeyManager` class, responsible for all API key management. It loads keys **exclusively from the database**, handles rotation, and tracks failures.
+2.  **`src/lib/config/settings.ts`**: The service responsible for fetching all application settings from the database. This is the single source of truth for configuration.
+3.  **`src/lib/services/key.service.ts`**: The service responsible for all API key management. It loads keys **exclusively from the database**, handles rotation, and tracks failures using a stateless, database-centric approach.
 4.  **`src/middleware.ts`**: The entry point for all incoming requests. It uses `settings.ts` to fetch authentication tokens dynamically for every request.
-5.  **`src/app/admin`**: The code for the admin dashboard, including the UI components (`KeyTable.tsx`, `ConfigForm.tsx`, etc.) and the `actions.ts` file containing all server-side logic for management.
-6.  **`/api/cron/health-check`**: A secure API endpoint that, when called, triggers a health check to reactivate failing API keys.
+5.  **`src/app/[lang]/admin`**: The code for the admin dashboard, including the UI components (`KeyTable.tsx`, `ConfigForm.tsx`, etc.) and the `actions.ts` file containing all server-side logic for management.
+6.  **`src/app/api/cron/health-check`**: A secure API endpoint that, when called, triggers a health check to reactivate failing API keys.
 
 ## Getting Started
 
@@ -60,15 +60,15 @@ This project uses Drizzle ORM for database management. Run the following command
 pnpm db:migrate
 ```
 
-This will create a `local.db` file.
+This will create a `local.db` file in the `data` directory.
 
 ### 3. Configure Environment Variables
 
 Create a `.env.local` file. The following variable is required for the application to connect to the database.
 
-- **`DATABASE_URL`**: The connection string for your database. The default `pnpm db:migrate` command will create a SQLite database at `local.db`.
+- **`DATABASE_URL`**: The connection string for your database. For local development, point it to the SQLite file.
   ```
-  DATABASE_URL="file:./local.db"
+  DATABASE_URL="file:./data/dev.db"
   ```
 
 You might also set `GOOGLE_API_HOST` if you need to use a proxy for the Google API. All other settings are managed via the Web UI.
@@ -92,68 +92,9 @@ On the first run, the application has no API keys or secure authentication token
 
 Your gateway is now fully configured and ready to use.
 
-## Deployment with Vercel (Recommended)
-
-Deploying to Vercel is the recommended method for this project, as it leverages the platform's seamless integration with Next.js and serverless databases.
-
-### 1. Fork the Repository
-
-Click the "Fork" button at the top right of this page to create your own copy of the repository.
-
-### 2. Create a New Project on Vercel
-
-- Go to your Vercel dashboard and click "Add New... -> Project".
-- Import the repository you just forked from GitHub.
-
-### 3. Configure the Vercel Project
-
-#### a. Set Up the Database
-
-- While still in the project creation wizard, navigate to the "Storage" tab.
-- Click "Add" next to "Postgres" to create a new Vercel Postgres database.
-- Accept the terms and click "Create & Connect". Vercel will automatically create the database and set the required environment variables (`POSTGRES_*`) for you.
-
-#### b. Add Required Environment Variables
-
-- Navigate to the "Environment Variables" section.
-- The `POSTGRES_*` variables will already be there. You need to add the following:
-  - **`DATABASE_URL`**: This variable is still required by Prisma at build time. Set its value to the same value as `POSTGRES_PRISMA_URL`. You can copy it from the variable list above.
-  - **`CRON_SECRET`** (Recommended): Set a long, random, and secure string. This will be used to protect the health check endpoint.
-
-#### c. Override the Build Command
-
-- This is the most critical step. In the "Build & Development Settings" section, find the **Build Command** field.
-- Click "Override" and set the command to:
-  ```bash
-  npx prisma migrate deploy && next build
-  ```
-- This command ensures that every time you deploy, Prisma applies any new database migrations _before_ building the application.
-
-### 4. Deploy
-
-- Click the "Deploy" button. Vercel will now build and deploy your project.
-
-### 5. First-Time Setup
-
-- Once the deployment is complete, visit your new Vercel URL (e.g., `https://your-project-name.vercel.app`).
-- Follow the exact same "First-Time Setup via Web UI" steps as in the local development guide to set your admin password and add your Gemini API keys.
-
-### 6. Configure Cron Job on Vercel
-
-- To enable automatic health checks for your API keys, go to the "Cron Jobs" tab in your Vercel project dashboard.
-- Create a new cron job with the following settings:
-  - **Schedule**: We recommend `0 * * * *` (once every hour).
-  - **URL to hit**: Use the `GET` method and enter the following URL, replacing `YOUR_CRON_SECRET` with the value you set in your environment variables:
-    ```
-    https://YOUR_APP_URL/api/cron/health-check
-    ```
-    You must also add an `Authorization` header with the value `Bearer YOUR_CRON_SECRET`. Vercel's UI has a dedicated section for adding headers to cron job requests.
-
-Your application is now fully deployed and configured on Vercel.
-
 ## Deployment with Docker
 
-This project is a **stateful application** that requires a persistent database. The provided `Dockerfile` and `docker-compose.yml` are optimized for production deployment.
+This project is an **application with a persistent database backend**. The application logic itself is designed to be **stateless**, making it ideal for serverless and edge deployments. The provided `Dockerfile` and `docker-compose.yml` are optimized for production deployment.
 
 ### Deployment Principles
 
@@ -180,7 +121,7 @@ This project is a **stateful application** that requires a persistent database. 
     CRON_SECRET="your-long-random-secret-token"
     ```
 
-    **Important**: You only need to set `DATABASE_URL` and `CRON_SECRET` for Docker deployment. Variables like `POSTGRES_PRISMA_URL` are for Vercel deployment only. All other settings are managed via the Web UI after deployment.
+    # Important: Variables like `POSTGRES_PRISMA_URL` are for Vercel deployment only. All other settings are managed via the Web UI after deployment.
 
 2.  **Build and run the container**:
 

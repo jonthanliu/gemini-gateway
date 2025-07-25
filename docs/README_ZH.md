@@ -40,24 +40,7 @@ You can read this document in [English](README.md).
 5.  **`src/app/admin`**: 管理后台的代码，包括 UI 组件（如 `KeyTable.tsx`, `ConfigForm.tsx`）和包含所有管理逻辑的 `actions.ts` 文件。
 6.  **`/api/cron/health-check`**: 一个安全的 API 端点，当被调用时，会触发对失效 API 密钥的健康检查。
 
-## 快速上手
-
-请按照以下步骤在本地运行本项目。
-
-### 1. 数据库迁移
-
-在不同的环境中，请使用对应的命令来管理数据库结构：
-
-- **开发环境**: 在修改了 `prisma/schema.prisma` 文件后，运行此命令来创建和应用新的迁移。
-  ```bash
-  pnpm run db:migrate
-  ```
-- **生产环境**: 在部署新版本时，此命令会安全地应用所有待处理的迁移，而不会重置数据。
-  ```bash
-  pnpm prisma migrate deploy
-  ```
-
-### 2. 安装依赖
+### 1. 安装依赖
 
 进入项目目录并安装所需依赖包。
 
@@ -73,15 +56,15 @@ pnpm install
 pnpm db:migrate
 ```
 
-这将在项目根目录创建一个 `local.db` 文件。
+这将在 `data` 目录创建一个 `dev.db` 文件。
 
-### 4. 配置环境变量
+### 3. 配置环境变量
 
 创建一个 `.env.local` 文件。应用需要以下变量来连接数据库。
 
-- **`DATABASE_URL`**: 您的数据库连接字符串。默认的 `pnpm db:migrate` 命令会在项目根目录创建一个 `local.db` 文件。
+- **`DATABASE_URL`**: 您的数据库连接字符串。对于本地开发，请指向 SQLite 文件。
   ```
-  DATABASE_URL="file:./local.db"
+  DATABASE_URL="file:./data/dev.db"
   ```
 
 仅当您需要为 Google API 使用代理时，您才可能需要设置 `GOOGLE_API_HOST`。所有其他设置都通过 Web UI 进行管理。
@@ -99,79 +82,11 @@ pnpm dev
 首次运行时，本应用没有任何 API 密钥或安全认证令牌。
 
 1.  **访问仪表盘**: 打开 [http://localhost:3000/admin](http://localhost:3000/admin)。系统将提示您输入密码。
-2.  **初始登录**: 由于 `AUTH_TOKEN` 初始为空，您可以**输入任何值**（或留空）并点击“Login”来登录。
-3.  **保护您的仪表盘**:
-    - 导航到 **Configuration** (配置) 标签页。
-    - 在 "Auth Token" 字段中，输入一个新的、强壮的、秘密的密码。
-    - 点击 "Save Configuration" (保存配置)。您将立即被登出。
-    - 使用您刚设置的新 `AUTH_TOKEN` 重新登录。
-4.  **添加 API 密钥**:
-    - 导航到 **Keys** (密钥) 标签页。
-    - 点击 "Add New Key" (新增密钥) 并粘贴您的 Gemini API 密钥。
-5.  **配置 API 访问**:
-    - 回到 **Configuration** (配置) 标签页。
-    - 在 "Allowed API Tokens" (允许的 API 令牌) 字段中，添加您希望授权给客户端应用的访问令牌。
+2.  **初始登录**: 由于 `AUTH_TOKEN` 初始为空，您必须通过**输入一个新的、非空的秘密令牌**来登录。您首次输入的这个令牌将自动成为系统的永久管理员密码。
+3.  **添加 API 密钥**: 登录后，导航到 **Keys** (密钥) 标签页，点击 "Add New Key" (新增密钥) 来粘贴您的 Gemini API 密钥。
+4.  **配置 API 访问**: 前往 **Configuration** (配置) 标签页，在 "Allowed API Tokens" (允许的 API 令牌) 字段中，添加您希望授权给客户端应用的访问令牌。
 
 现在，您的网关已完全配置并准备就绪。
-
-## 使用 Vercel 部署 (推荐)
-
-我们推荐使用 Vercel 进行部署，因为它可以无缝集成 Next.js 和 Serverless 数据库，提供最佳体验。
-
-### 1. Fork 本仓库
-
-点击页面右上角的 "Fork" 按钮，创建您自己的仓库副本。
-
-### 2. 在 Vercel 上创建新项目
-
-- 进入您的 Vercel 控制台，点击 "Add New... -> Project"。
-- 从 GitHub 导入您刚刚 Fork 的仓库。
-
-### 3. 配置 Vercel 项目
-
-#### a. 设置数据库
-
-- 在项目创建向导中，切换到 "Storage" 标签页。
-- 点击 "Postgres" 旁边的 "Add" 按钮，创建一个新的 Vercel Postgres 数据库。
-- 同意条款并点击 "Create & Connect"。Vercel 将自动创建数据库并为您设置所需的环境变量 (`POSTGRES_*`)。
-
-#### b. 添加所需的环境变量
-
-- 导航到 "Environment Variables" (环境变量) 部分。
-- `POSTGRES_*` 变量应该已经存在了。您需要额外添加以下变量：
-  - **`DATABASE_URL`**: Prisma 在构建时仍然需要此变量。请将其值设置为与 `POSTGRES_PRISMA_URL` 相同的值。您可以直接从上面的变量列表中复制。
-  - **`CRON_SECRET`** (推荐): 设置一个长的、随机且安全的字符串，用于保护健康检查端点。
-
-#### c. 覆盖构建命令
-
-- 这是最关键的一步。在 "Build & Development Settings" (构建和开发设置) 部分，找到 **Build Command** (构建命令) 字段。
-- 点击 "Override" (覆盖) 并将命令设置为：
-  ```bash
-  npx prisma migrate deploy && next build
-  ```
-- 此命令确保每次部署时，Prisma 会在构建应用*之前*应用所有新的数据库迁移。
-
-### 4. 部署
-
-- 点击 "Deploy" (部署) 按钮。Vercel 将开始构建和部署您的项目。
-
-### 5. 首次设置
-
-- 部署完成后，访问您的新 Vercel URL (例如, `https://your-project-name.vercel.app`)。
-- 遵循与本地开发指南中完全相同的“首次通过 Web UI 设置”步骤，来设置您的管理员密码并添加您的 Gemini API 密钥。
-
-### 6. 在 Vercel 上配置 Cron 作业
-
-- 为了让您的 API 密钥能够自动进行健康检查，请在您的 Vercel 项目控制台中进入 "Cron Jobs" 标签页。
-- 创建一个新的 cron 作业，并使用以下设置：
-  - **Schedule (计划)**: 我们推荐设置为 `0 * * * *` (每小时执行一次)。
-  - **URL to hit (要访问的 URL)**: 使用 `GET` 方法并输入以下 URL，请将 `YOUR_CRON_SECRET` 替换为您在环境变量中设置的值：
-    ```
-    https://YOUR_APP_URL/api/cron/health-check
-    ```
-    您还必须添加一个 `Authorization` 请求头，其值为 `Bearer YOUR_CRON_SECRET`。Vercel 的 UI 界面中有专门用于为 cron 作业请求添加请求头的部分。
-
-您的应用现已在 Vercel 上完全部署和配置完毕。
 
 ## 使用 Docker 部署
 

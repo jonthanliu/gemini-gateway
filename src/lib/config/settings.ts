@@ -9,7 +9,7 @@ let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // 定义默认配置
-const defaultSettings = {
+export const defaultSettings = {
   AUTH_TOKEN: "", // Add AUTH_TOKEN to the defaults
   ALLOWED_TOKENS: "",
   MAX_FAILURES: "3",
