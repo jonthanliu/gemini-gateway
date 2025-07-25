@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: anthropicRequest.model || "gemini-pro",
+      model: "gemini-2.5-pro",
     });
 
     const result = await model.generateContentStream(geminiRequest);
@@ -46,7 +46,16 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error({ error }, "[Anthropic Bridge Error]");
+    logger.error(
+      {
+        error,
+        errorMessage: error instanceof Error ? error.message : "N/A",
+        errorStack: error instanceof Error ? error.stack : "N/A",
+        errorConstructor: error?.constructor?.name,
+        errorString: String(error),
+      },
+      "[Anthropic Bridge Error]"
+    );
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred.";
     return NextResponse.json(

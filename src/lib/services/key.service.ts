@@ -33,10 +33,12 @@ export async function getNextWorkingKey(): Promise<string> {
 
     const keyToUse = validKeys[0];
 
-    await tx
-      .update(apiKeys)
-      .set({ lastUsed: new Date() })
-      .where(eq(apiKeys.id, keyToUse.id));
+    // Per user feedback, this non-essential write operation is causing locking issues.
+    // It is disabled to prioritize service availability over statistics.
+    // await tx
+    //   .update(apiKeys)
+    //   .set({ lastUsed: new Date() })
+    //   .where(eq(apiKeys.id, keyToUse.id));
 
     return keyToUse;
   });

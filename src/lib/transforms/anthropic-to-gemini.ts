@@ -6,6 +6,42 @@ import {
 } from "@google/generative-ai";
 
 /**
+ * Recursively removes the 'additionalProperties' key from a JSON schema object.
+ * Gemini API rejects schemas that contain this key.
+ * @param schema The schema object to clean.
+ * @returns A new schema object without 'additionalProperties'.
+ */
+function cleanSchema<T>(schema: T): T {
+  if (typeof schema !== "object" || schema === null) {
+    return schema;
+  }
+
+  if (Array.isArray(schema)) {
+    return schema.map(cleanSchema) as T;
+  }
+
+  const newSchema: Record<string, unknown> = {};
+  for (const key in schema) {
+    if (Object.prototype.hasOwnProperty.call(schema, key)) {
+      if (key !== "additionalProperties") {
+        newSchema[key] = cleanSchema((schema as Record<string, unknown>)[key]);
+      }
+    }
+  }
+
+  // Gemini only supports 'enum' and 'date-time' for string formats.
+  // Remove any other format specifiers to avoid validation errors.
+  if (newSchema.type === "string" && newSchema.format) {
+    const allowedFormats = ["enum", "date-time"];
+    if (!allowedFormats.includes(newSchema.format as string)) {
+      delete newSchema.format;
+    }
+  }
+
+  return newSchema as T;
+}
+
+/**
  * Converts an Anthropic MessageCreateParams object to a Gemini GenerateContentRequest object.
  *
  * @param request The Anthropic request object.
@@ -77,12 +113,14 @@ export function convertAnthropicToGemini(
     const functionDeclarations = request.tools
       .filter((tool): tool is Anthropic.Tool => "input_schema" in tool)
       .map((tool) => {
+        const cleanedProperties = cleanSchema(tool.input_schema.properties);
+
         return {
           name: tool.name,
           description: tool.description,
           parameters: {
             type: SchemaType.OBJECT,
-            properties: tool.input_schema.properties,
+            properties: cleanedProperties,
             required: tool.input_schema.required,
           } as FunctionDeclarationSchema,
         };

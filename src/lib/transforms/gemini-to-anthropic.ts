@@ -49,50 +49,55 @@ export function streamGeminiToAnthropic(
         totalOutputTokens +=
           chunk.response.usageMetadata?.candidatesTokenCount || 0;
 
-        const part = candidate.content.parts[0];
-
-        if (part.text) {
-          // 2. Handle text block
-          writeEvent(controller, "content_block_start", {
-            type: "content_block_start",
-            index: blockIndex,
-            content_block: { type: "text", text: "" },
-          });
-          writeEvent(controller, "content_block_delta", {
-            type: "content_block_delta",
-            index: blockIndex,
-            delta: { type: "text_delta", text: part.text },
-          });
-          writeEvent(controller, "content_block_stop", {
-            type: "content_block_stop",
-            index: blockIndex,
-          });
-          blockIndex++;
-        } else if (part.functionCall) {
-          // 3. Handle tool use block
-          writeEvent(controller, "content_block_start", {
-            type: "content_block_start",
-            index: blockIndex,
-            content_block: {
-              type: "tool_use",
-              id: part.functionCall.name,
-              name: part.functionCall.name,
-              input: {},
-            },
-          });
-          writeEvent(controller, "content_block_delta", {
-            type: "content_block_delta",
-            index: blockIndex,
-            delta: {
-              type: "input_json_delta",
-              partial_json: JSON.stringify(part.functionCall.args),
-            },
-          });
-          writeEvent(controller, "content_block_stop", {
-            type: "content_block_stop",
-            index: blockIndex,
-          });
-          blockIndex++;
+        // Safely access and iterate over parts, as a chunk may have no content
+        // or be stopped for safety reasons.
+        const parts = candidate.content?.parts;
+        if (parts && parts.length > 0) {
+          for (const part of parts) {
+            if (part.text) {
+              // 2. Handle text block
+              writeEvent(controller, "content_block_start", {
+                type: "content_block_start",
+                index: blockIndex,
+                content_block: { type: "text", text: "" },
+              });
+              writeEvent(controller, "content_block_delta", {
+                type: "content_block_delta",
+                index: blockIndex,
+                delta: { type: "text_delta", text: part.text },
+              });
+              writeEvent(controller, "content_block_stop", {
+                type: "content_block_stop",
+                index: blockIndex,
+              });
+              blockIndex++;
+            } else if (part.functionCall) {
+              // 3. Handle tool use block
+              writeEvent(controller, "content_block_start", {
+                type: "content_block_start",
+                index: blockIndex,
+                content_block: {
+                  type: "tool_use",
+                  id: part.functionCall.name,
+                  name: part.functionCall.name,
+                  input: {},
+                },
+              });
+              writeEvent(controller, "content_block_delta", {
+                type: "content_block_delta",
+                index: blockIndex,
+                delta: {
+                  type: "input_json_delta",
+                  partial_json: JSON.stringify(part.functionCall.args),
+                },
+              });
+              writeEvent(controller, "content_block_stop", {
+                type: "content_block_stop",
+                index: blockIndex,
+              });
+              blockIndex++;
+            }
+          }
         }
 
         if (candidate.finishReason) {
