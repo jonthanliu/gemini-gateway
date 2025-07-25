@@ -2,53 +2,49 @@ import { getSettings } from "@/lib/config/settings";
 import { db } from "@/lib/db.sqlite";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
-import { and, asc, count, desc, eq, gte, lt, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, max, sql } from "drizzle-orm";
+
+export const keyUsage = new Map<string, Date>();
 
 /**
- * Gets the next working API key using a stateless, database-driven approach.
- * Implements LRU (Least Recently Used) strategy for key selection.
+ * Gets the next working API key using an in-memory LRU strategy.
  *
  * @returns A valid API key string
  * @throws Error if no valid keys are available
  */
-export async function getNextWorkingKey(): Promise<string> {
+export async function getNextWorkingKey(
+  usage: Map<string, Date> = keyUsage
+): Promise<string> {
   const settings = await getSettings();
   const maxFailures = settings.MAX_FAILURES;
 
-  const selectedKey = await db.transaction(async (tx) => {
-    const validKeys = await tx
-      .select()
-      .from(apiKeys)
-      .where(and(eq(apiKeys.enabled, true), lt(apiKeys.failCount, maxFailures)))
-      .orderBy(asc(apiKeys.lastUsed))
-      .limit(1);
+  const validKeys = await db
+    .select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.enabled, true), lt(apiKeys.failCount, maxFailures)));
 
-    if (validKeys.length === 0) {
-      // We need to throw an error that the transaction can catch and rollback.
-      // A custom error type might be even better.
-      throw new Error(
-        "No API keys available. Please check key validity or reset failure counts."
-      );
-    }
+  if (validKeys.length === 0) {
+    throw new Error(
+      "No API keys available. Please check key validity or reset failure counts."
+    );
+  }
 
-    const keyToUse = validKeys[0];
-
-    // Per user feedback, this non-essential write operation is causing locking issues.
-    // It is disabled to prioritize service availability over statistics.
-    // await tx
-    //   .update(apiKeys)
-    //   .set({ lastUsed: new Date() })
-    //   .where(eq(apiKeys.id, keyToUse.id));
-
-    return keyToUse;
+  // Sort keys by last used time from our in-memory map
+  validKeys.sort((a, b) => {
+    const aTime = usage.get(a.key)?.getTime() || 0;
+    const bTime = usage.get(b.key)?.getTime() || 0;
+    return aTime - bTime;
   });
 
+  const keyToUse = validKeys[0];
+  usage.set(keyToUse.key, new Date());
+
   logger.info(
-    { key: `...${selectedKey.key.slice(-4)}` },
-    "Selected API key using LRU strategy."
+    { key: `...${keyToUse.key.slice(-4)}` },
+    "Selected API key using in-memory LRU strategy."
   );
 
-  return selectedKey.key;
+  return keyToUse.key;
 }
 
 /**
