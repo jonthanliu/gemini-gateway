@@ -97,6 +97,12 @@ export async function callGeminiApi({
       await logRequest(apiKey, model, statusCode, false, latency);
       await logError(apiKey, `SDK Error`, errorMessage, error);
       lastError = error;
+
+      // If the service is unavailable, wait before retrying with the next key.
+      if (statusCode === 503) {
+        const delay = 1000 * Math.pow(2, i) + Math.random() * 1000; // Exponential backoff with jitter
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
   }
 

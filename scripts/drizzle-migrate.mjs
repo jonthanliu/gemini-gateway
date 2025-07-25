@@ -1,8 +1,14 @@
 import { createClient } from "@libsql/client";
+import pkg from "@next/env";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+const { loadEnvConfig } = pkg;
+
+// Load environment variables from .env file
+const projectDir = process.cwd();
+loadEnvConfig(projectDir);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
