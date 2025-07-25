@@ -28,7 +28,7 @@ export async function login(
   logger.info(`Stored auth token hash exists: ${!!storedAuthTokenHash}`);
 
   // Case 1: System is already configured with a hashed token.
-  if (storedAuthTokenHash) {
+  if (storedAuthTokenHash && storedAuthTokenHash !== "") {
     const isValid = await verifyToken(submittedToken, storedAuthTokenHash);
     if (!isValid) {
       logger.warn("Login failed: Invalid token.");
