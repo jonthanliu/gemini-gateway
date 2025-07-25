@@ -140,6 +140,10 @@
             "info": {
                 "noNewKeys": "No new keys were added.",
                 "duplicates": "{count} key(s) were duplicates or already existed."
+            },
+            "toast": {
+                "success": "API Keys Processed",
+                "error": "Error Adding Keys"
             }
         },
         "table": {

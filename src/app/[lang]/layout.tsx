@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/sonner";
 import { i18n } from "@/i18n-config";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <div className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
       {children}
+      <Toaster />
     </div>
   );
 }

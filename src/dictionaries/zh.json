@@ -140,6 +140,10 @@
             "info": {
                 "noNewKeys": "没有添加任何新密钥。",
                 "duplicates": "{count} 个密钥是重复的或已存在。"
+            },
+            "toast": {
+                "success": "API密钥已处理",
+                "error": "添加密钥出错"
             }
         },
         "table": {
