@@ -1,6 +1,4 @@
 import { getSettings } from "@/lib/config/settings";
-import { db } from "@/lib/db.sqlite";
-import { errorLogs, requestLogs } from "@/lib/db/schema";
 import {
   buildGeminiRequest,
   formatGoogleModelsToOpenAI,
@@ -11,6 +9,7 @@ import {
   handleApiFailure,
   resetKeyFailureCount,
 } from "@/lib/services/key.service";
+import { logError, logRequest } from "@/lib/services/logging.service";
 import { Agent } from "http";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { NextRequest, NextResponse } from "next/server";
@@ -162,6 +161,8 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     if (
       geminiResponse.headers.get("Content-Type")?.includes("text/event-stream")
     ) {
+      isSuccess = geminiResponse.ok;
+      statusCode = geminiResponse.status;
       return new NextResponse(geminiResponse.body, {
         headers: {
           "Content-Type": "text/event-stream",
@@ -176,9 +177,6 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Check if the response from Gemini is not OK
     if (!geminiResponse.ok) {
       statusCode = geminiResponse.status;
-      t = Date.now();
-      await handleApiFailure(apiKey);
-      timings.dbUpdate = Date.now() - t;
       const errorText = await geminiResponse.text();
       let errorBody: unknown = {};
       let errorMessage = "Unknown error";
@@ -198,12 +196,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
         errorBody = { error: { message: errorMessage } };
       }
 
-      await db.insert(errorLogs).values({
-        apiKey: apiKey,
-        errorType: "gemini_api_error",
-        errorMessage: errorMessage,
-        errorDetails: JSON.stringify(errorBody),
-      });
+      logError(apiKey, "gemini_api_error", errorMessage, errorBody);
 
       logger.error(
         {
@@ -221,9 +214,6 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     // Success
     isSuccess = true;
     statusCode = geminiResponse.status;
-    t = Date.now();
-    await resetKeyFailureCount(apiKey);
-    timings.dbUpdate = Date.now() - t;
 
     // Otherwise, we return the JSON response directly.
     const data = await geminiResponse.json();
@@ -292,13 +282,14 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       (async () => {
         const t = Date.now();
         try {
-          await db.insert(requestLogs).values({
-            apiKey: apiKey,
-            model: model,
-            statusCode: statusCode,
-            isSuccess: isSuccess,
-            latency: latency,
-          });
+          if (isSuccess) {
+            await resetKeyFailureCount(apiKey);
+          } else {
+            await handleApiFailure(apiKey);
+          }
+          timings.dbUpdate = Date.now() - t;
+
+          await logRequest(apiKey, model, statusCode, isSuccess, latency);
           timings.dbLogging = Date.now() - t;
           logger.info({ timings }, "Request performance metrics");
         } catch (error) {

@@ -1,17 +1,16 @@
 import { getSettings } from "@/lib/config/settings";
-import { db } from "@/lib/db.sqlite";
-import { apiKeys, errorLogs, requestLogs } from "@/lib/db/schema";
+import logger from "@/lib/logger";
 import {
   getNextWorkingKey,
   handleApiFailure,
   resetKeyFailureCount,
 } from "@/lib/services/key.service";
+import { logError, logRequest } from "@/lib/services/logging.service";
 import {
   EnhancedGenerateContentResponse,
   GenerateContentRequest,
   GoogleGenerativeAI,
 } from "@google/generative-ai";
-import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export interface GeminiClientRequest {
@@ -70,15 +69,7 @@ export async function callGeminiApi({
       const stream = sdkStreamToReadableStream(result.stream);
 
       const latency = Date.now() - startTime;
-      await db.insert(requestLogs).values({
-        apiKey: apiKey.slice(-4),
-        model,
-        statusCode: 200, // Success
-        isSuccess: true,
-        latency,
-      });
-      await resetKeyFailureCount(apiKey);
-
+      logRequest(apiKey, model, 200, true, latency);
       return new Response(stream, {
         headers: {
           "Content-Type": "text/event-stream",
@@ -88,49 +79,52 @@ export async function callGeminiApi({
       });
     } catch (error) {
       lastError = error;
+    } finally {
       const latency = Date.now() - startTime;
       let statusCode = 500;
+      let isSuccess = false;
       let errorMessage = "An unknown error occurred";
 
-      if (error instanceof Error) {
-        errorMessage = error.message;
+      if (lastError) {
+        if (lastError instanceof Error) {
+          errorMessage = lastError.message;
+        }
+
+        // Check for Google API specific error properties
+        if (isApiError(lastError) && lastError.httpStatus) {
+          statusCode = lastError.httpStatus;
+        }
+      } else {
+        statusCode = 200;
+        isSuccess = true;
       }
 
-      // Check for Google API specific error properties
-      if (isApiError(error) && error.httpStatus) {
-        statusCode = error.httpStatus;
-      }
+      (async () => {
+        try {
+          if (isSuccess) {
+            await resetKeyFailureCount(apiKey);
+          } else {
+            await handleApiFailure(apiKey);
+          }
 
-      await db.insert(requestLogs).values({
-        apiKey: apiKey.slice(-4),
-        model,
-        statusCode,
-        isSuccess: false,
-        latency,
-      });
-      await db.insert(errorLogs).values({
-        apiKey: apiKey.slice(-4),
-        errorType: `SDK Error (Attempt ${i + 1})`,
-        errorMessage,
-        errorDetails: JSON.stringify(error),
-      });
+          await logRequest(apiKey, model, statusCode, isSuccess, latency);
 
-      if (statusCode >= 400 && statusCode < 500) {
-        await handleApiFailure(apiKey);
-        // Also increment the failCount in the database
-        await db
-          .update(apiKeys)
-          .set({ failCount: sql`${apiKeys.failCount} + 1` })
-          .where(eq(apiKeys.key, apiKey));
-      }
+          if (!isSuccess) {
+            await logError(apiKey, `SDK Error`, errorMessage, lastError);
+          }
+        } catch (dbError) {
+          logger.error(dbError, "Failed to write logs to database");
+        }
+      })();
     }
   }
 
-  await db.insert(errorLogs).values({
-    errorType: "General Error",
-    errorMessage: "All API keys failed or the service is unavailable.",
-    errorDetails: JSON.stringify(lastError),
-  });
+  logError(
+    "unknown",
+    "General Error",
+    "All API keys failed or the service is unavailable.",
+    lastError
+  );
 
   return NextResponse.json(
     {
