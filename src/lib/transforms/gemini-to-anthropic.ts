@@ -49,8 +49,19 @@ export function streamGeminiToAnthropic(
           const candidate = chunk.response.candidates?.[0];
           if (!candidate) continue;
 
-          totalOutputTokens +=
+          const chunkOutputTokens =
             chunk.response.usageMetadata?.candidatesTokenCount || 0;
+          totalOutputTokens += chunkOutputTokens;
+
+          if (chunkOutputTokens > 0) {
+            writeEvent(controller, "message_delta", {
+              type: "message_delta",
+              delta: {},
+              usage: {
+                output_tokens: totalOutputTokens,
+              },
+            });
+          }
 
           // Safely access and iterate over parts, as a chunk may have no content
           // or be stopped for safety reasons.
@@ -122,7 +133,6 @@ export function streamGeminiToAnthropic(
                 : "An unknown error occurred while processing the stream.",
           },
         });
-        throw error;
       }
 
       // 4. Send message_delta with final usage
