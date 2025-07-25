@@ -1,5 +1,4 @@
 import { getSettings } from "@/lib/config/settings";
-import logger from "@/lib/logger";
 import {
   getNextWorkingKey,
   handleApiFailure,
@@ -68,8 +67,11 @@ export async function callGeminiApi({
       const result = await generativeModel.generateContentStream(request);
       const stream = sdkStreamToReadableStream(result.stream);
 
+      // On success, log and return immediately.
       const latency = Date.now() - startTime;
-      logRequest(apiKey, model, 200, true, latency);
+      await logRequest(apiKey, model, 200, true, latency);
+      await resetKeyFailureCount(apiKey);
+
       return new Response(stream, {
         headers: {
           "Content-Type": "text/event-stream",
@@ -78,48 +80,28 @@ export async function callGeminiApi({
         },
       });
     } catch (error) {
-      lastError = error;
-    } finally {
       const latency = Date.now() - startTime;
       let statusCode = 500;
-      let isSuccess = false;
       let errorMessage = "An unknown error occurred";
 
-      if (lastError) {
-        if (lastError instanceof Error) {
-          errorMessage = lastError.message;
-        }
-
-        // Check for Google API specific error properties
-        if (isApiError(lastError) && lastError.httpStatus) {
-          statusCode = lastError.httpStatus;
-        }
-      } else {
-        statusCode = 200;
-        isSuccess = true;
+      if (error instanceof Error) {
+        errorMessage = error.message;
       }
 
-      (async () => {
-        try {
-          if (isSuccess) {
-            await resetKeyFailureCount(apiKey);
-          } else {
-            await handleApiFailure(apiKey);
-          }
+      if (isApiError(error) && error.httpStatus) {
+        statusCode = error.httpStatus;
+      }
 
-          await logRequest(apiKey, model, statusCode, isSuccess, latency);
-
-          if (!isSuccess) {
-            await logError(apiKey, `SDK Error`, errorMessage, lastError);
-          }
-        } catch (dbError) {
-          logger.error(dbError, "Failed to write logs to database");
-        }
-      })();
+      // Log the failure and continue to the next key.
+      await handleApiFailure(apiKey);
+      await logRequest(apiKey, model, statusCode, false, latency);
+      await logError(apiKey, `SDK Error`, errorMessage, error);
+      lastError = error;
     }
   }
 
-  logError(
+  // If all keys fail, log a general error and return a 503.
+  await logError(
     "unknown",
     "General Error",
     "All API keys failed or the service is unavailable.",
@@ -129,7 +111,11 @@ export async function callGeminiApi({
   return NextResponse.json(
     {
       error: "Service unavailable",
-      details: lastError ? JSON.stringify(lastError) : "Unknown error",
+      details: lastError
+        ? lastError instanceof Error
+          ? lastError.message
+          : JSON.stringify(lastError)
+        : "Unknown error",
     },
     { status: 503 }
   );

@@ -43,8 +43,9 @@ export function streamGeminiToAnthropic(
       let totalOutputTokens = 0;
       let finalStopReason = null;
 
+      let chunk: Gemini.GenerateContentResult | undefined;
       try {
-        for await (const chunk of geminiStream) {
+        for await (chunk of geminiStream) {
           const candidate = chunk.response.candidates?.[0];
           if (!candidate) continue;
 
@@ -110,7 +111,7 @@ export function streamGeminiToAnthropic(
           }
         }
       } catch (error) {
-        logger.error({ err: error }, "Error processing Gemini stream");
+        logger.error({ err: error, chunk }, "Error processing Gemini stream");
         writeEvent(controller, "error", {
           type: "error",
           error: {
@@ -121,6 +122,7 @@ export function streamGeminiToAnthropic(
                 : "An unknown error occurred while processing the stream.",
           },
         });
+        throw error;
       }
 
       // 4. Send message_delta with final usage

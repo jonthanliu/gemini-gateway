@@ -235,6 +235,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       errorMessage.includes("No API keys available") ||
       errorMessage.includes("KeyManager must be initialized")
     ) {
+      statusCode = 403;
       logger.warn(
         { error: errorMessage },
         "KeyManager initialization failed. No keys were loaded from DB or ENV."
@@ -252,6 +253,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
     }
 
     if (errorMessage.includes("All API keys are currently failing")) {
+      statusCode = 403;
       logger.error(
         { error: errorMessage },
         "All available API keys are marked as failing."
@@ -289,8 +291,9 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
           }
           timings.dbUpdate = Date.now() - t;
 
+          const t_logging = Date.now();
           await logRequest(apiKey, model, statusCode, isSuccess, latency);
-          timings.dbLogging = Date.now() - t;
+          timings.dbLogging = Date.now() - t_logging;
           logger.info({ timings }, "Request performance metrics");
         } catch (error) {
           logger.error(error, "Failed to write request log to database");

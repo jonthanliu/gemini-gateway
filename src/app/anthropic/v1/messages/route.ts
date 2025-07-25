@@ -1,6 +1,11 @@
 // app/anthropic/v1/messages/route.ts
 import logger from "@/lib/logger";
-import { getNextWorkingKey } from "@/lib/services/key.service";
+import {
+  getNextWorkingKey,
+  handleApiFailure,
+  resetKeyFailureCount,
+} from "@/lib/services/key.service";
+import { logError, logRequest } from "@/lib/services/logging.service";
 import { convertAnthropicToGemini } from "@/lib/transforms/anthropic-to-gemini";
 import { streamGeminiToAnthropic } from "@/lib/transforms/gemini-to-anthropic";
 import {
@@ -10,8 +15,6 @@ import {
 } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
-// Helper function for retry with exponential backoff
-
 type ErrorWithStatus = {
   status?: number;
   error?: {
@@ -19,8 +22,13 @@ type ErrorWithStatus = {
   };
 };
 
+function isApiError(error: unknown): error is { httpStatus?: number } {
+  return typeof error === "object" && error !== null && "httpStatus" in error;
+}
+
 async function retryWithBackoff<T>(
   fn: (apiKey: string) => Promise<T>,
+  model: string,
   retries = 5,
   delay = 1000,
   backoffFactor = 2
@@ -29,15 +37,32 @@ async function retryWithBackoff<T>(
 
   for (let i = 0; i < retries; i++) {
     const apiKey = await getNextWorkingKey();
+    const startTime = Date.now();
     try {
-      return await fn(apiKey);
+      const result = await fn(apiKey);
+      const latency = Date.now() - startTime;
+      await logRequest(apiKey, model, 200, true, latency);
+      await resetKeyFailureCount(apiKey);
+      return result;
     } catch (error: unknown) {
       lastError = error;
-      // Check for 503 status or message, common for service unavailable errors.
+      const latency = Date.now() - startTime;
+      let statusCode = 500;
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
+
       const isServiceUnavailable =
         (error instanceof Error && error.message.includes("503")) ||
         (error as ErrorWithStatus)?.status === 503 ||
         (error as ErrorWithStatus)?.error?.status === 503;
+
+      if (isApiError(error) && error.httpStatus) {
+        statusCode = error.httpStatus;
+      }
+
+      await handleApiFailure(apiKey);
+      await logRequest(apiKey, model, statusCode, false, latency);
+      await logError(apiKey, "Anthropic Bridge Error", errorMessage, error);
 
       if (isServiceUnavailable) {
         if (i < retries - 1) {
@@ -49,6 +74,8 @@ async function retryWithBackoff<T>(
             )}ms... (Attempt ${i + 1}/${retries})`
           );
           await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+        } else {
+          throw lastError;
         }
       } else {
         // Not a retriable error
@@ -81,7 +108,7 @@ export async function POST(req: NextRequest) {
         model: "gemini-2.5-pro",
       });
       return model.generateContentStream(geminiRequest);
-    });
+    }, "gemini-2.5-pro");
 
     // Adapt the stream to match the expected type
     async function* adaptStream(
