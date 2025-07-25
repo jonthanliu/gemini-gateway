@@ -99,6 +99,14 @@ export function convertAnthropicToGemini(
               },
             });
             break;
+          case "tool_use":
+            parts.push({
+              functionCall: {
+                name: contentBlock.name,
+                args: contentBlock.input as { [key: string]: unknown },
+              },
+            });
+            break;
         }
       }
     } else {
