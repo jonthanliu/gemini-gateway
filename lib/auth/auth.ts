@@ -1,4 +1,3 @@
-import { getSettings } from "@/lib/config/settings";
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -59,26 +58,14 @@ export async function isAuthenticated(
   }
 
   try {
-    const settings = await getSettings();
-    const allowedTokens = settings.ALLOWED_TOKENS.split(",")
+    const masterToken = process.env.AUTH_TOKEN || "";
+    const allowedTokens = (process.env.ALLOWED_TOKENS || "").split(",")
       .map((t: string) => t.trim())
       .filter(Boolean);
 
-    // If ALLOWED_TOKENS is not configured, deny all requests for security.
-    if (allowedTokens.length === 0) {
-      logger.warn(
-        `Authentication failed: No ALLOWED_TOKENS configured in settings.`
-      );
-      return new NextResponse(
-        JSON.stringify({
-          error: {
-            message: "Service not configured for API access.",
-            type: "server_error",
-            code: "no_allowed_tokens",
-          },
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+    // The master token is always allowed.
+    if (apiKey === masterToken) {
+      return null;
     }
 
     if (!allowedTokens.includes(apiKey)) {
