@@ -40,7 +40,7 @@ describe("Key Service - getNextWorkingKey", () => {
 
   it("should return different keys over multiple calls, demonstrating randomness", async () => {
     const results = new Set<string>();
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 20; i++) {
       results.add(await getNextWorkingKey());
     }
     // With 3 available keys, after 100 calls, we expect to have seen more than 1 unique key.

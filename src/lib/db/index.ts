@@ -9,18 +9,12 @@ declare global {
 }
 
 if (!global.client) {
-  const isTest = process.env.NODE_ENV === "test";
   global.client = createClient({
-    url: isTest
-      ? "file::memory:?cache=shared"
-      : process.env.DATABASE_URL || "file:local.db",
+    url: process.env.DATABASE_URL || "file:local.db",
   });
 
-  // For production/development, enable WAL mode for better concurrency.
-  if (!isTest) {
-    global.client.execute("PRAGMA journal_mode = WAL;");
-    global.client.execute("PRAGMA busy_timeout = 5000;");
-  }
+  global.client.execute("PRAGMA journal_mode = WAL;");
+  global.client.execute("PRAGMA busy_timeout = 5000;");
 }
 const client: Client = global.client;
 

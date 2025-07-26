@@ -1,23 +1,14 @@
-import { loadEnvConfig } from "@next/env";
-import { migrate } from "drizzle-orm/libsql/migrator";
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient, type Client } from "@libsql/client";
+// vitest.setup.ts
+import { beforeAll } from "vitest";
+import { randomUUID } from "crypto";
 import path from "path";
+import fs from "fs";
 
-const projectDir = process.cwd();
-loadEnvConfig(projectDir);
-
-let client: Client;
-
-export async function setup() {
-  client = createClient({
-    url: "file::memory:?cache=shared",
-  });
-  const db = drizzle(client);
-  const migrationsFolder = path.resolve(projectDir, "drizzle/migrations");
-  await migrate(db, { migrationsFolder });
-}
-
-export async function teardown() {
-  await client?.close();
-}
+beforeAll(() => {
+  const dbDir = path.resolve(process.cwd(), "db");
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+  const dbPath = path.join(dbDir, `${randomUUID()}.db`);
+  process.env.DATABASE_URL = `file:${dbPath}`;
+});

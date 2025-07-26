@@ -27,10 +27,7 @@ switch (dialect) {
       out: "./drizzle/migrations",
       dialect: "sqlite",
       dbCredentials: {
-        url:
-          process.env.NODE_ENV === "test"
-            ? "file::memory:"
-            : process.env.DATABASE_URL,
+        url: process.env.DATABASE_URL,
       },
     };
     break;

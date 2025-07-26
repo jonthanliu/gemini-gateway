@@ -1,9 +1,80 @@
-import { proxyRequest } from "@/lib/proxy/gemini-proxy";
-import { NextRequest } from "next/server";
+import logger from "@/lib/logger";
+import { retryWithExponentialBackoff } from "@/lib/proxy/retry-handler";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  // This route is now just a simple pass-through to the proxy.
-  // The proxy will handle fetching, and the adapter will handle formatting.
-  // We pass a special prefix to be replaced, specific to this OpenAI-compatible route.
-  return proxyRequest(request, "/openai");
+const BASE_URL = "https://generativelanguage.googleapis.com";
+const API_VERSION = "v1beta";
+
+async function proxyModelsRequest() {
+  const { models } = await retryWithExponentialBackoff(
+    async (apiKey: string) => {
+      const response = await fetch(`${BASE_URL}/${API_VERSION}/models`, {
+        headers: {
+          "x-goog-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
+    "gemini-2.5-pro" // Pass a placeholder model for key selection
+  );
+
+  const responseBody = {
+    object: "list",
+    data: models.map(({ name }: { name: string }) => ({
+      id: name.replace("models/", ""),
+      object: "model",
+      created: 0,
+      owned_by: "google",
+      permission: [],
+      root: name.replace("models/", ""),
+      parent: null,
+    })),
+  };
+
+  return NextResponse.json(responseBody, {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function GET() {
+  try {
+    return await proxyModelsRequest();
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        errorMessage: error instanceof Error ? error.message : "N/A",
+        errorStack: error instanceof Error ? error.stack : "N/A",
+        errorConstructor: error?.constructor?.name,
+        errorString: String(error),
+      },
+      "[Models Bridge Error]"
+    );
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred.";
+    return NextResponse.json(
+      {
+        error: {
+          message: errorMessage,
+          type: "internal_server_error",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function OPTIONS() {
+  return new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "*",
+      "Access-Control-Allow-Headers": "*",
+    },
+  });
 }
