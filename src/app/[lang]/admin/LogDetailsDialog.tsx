@@ -46,7 +46,7 @@ export function LogDetailsDialog({
       open={!!viewingLog}
       onOpenChange={(isOpen) => !isOpen && setViewingLog(null)}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {dictionary.title.replace(
@@ -56,7 +56,7 @@ export function LogDetailsDialog({
           </DialogTitle>
         </DialogHeader>
         {viewingLog && (
-          <div className="space-y-4 text-sm">
+          <div className="flex-1 overflow-y-auto pr-4 space-y-4 text-sm">
             {Object.entries(viewingLog).map(([key, value]) => (
               <div key={key} className="grid grid-cols-4 items-start gap-4">
                 <span className="font-semibold capitalize text-muted-foreground">

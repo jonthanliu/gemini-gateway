@@ -141,6 +141,42 @@ export function LogViewer({
 
   const totalPages = Math.ceil(total / limit);
 
+  const getPaginationItems = (currentPage: number, totalPages: number) => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const delta = 1;
+    const left = currentPage - delta;
+    const right = currentPage + delta;
+    const range = [];
+    const rangeWithDots: (number | string)[] = [];
+    let l: number | undefined;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= left - 1 && i <= right + 1)
+      ) {
+        range.push(i);
+      }
+    }
+
+    for (const i of range) {
+      if (l) {
+        if (i - l > 1) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+    return rangeWithDots;
+  };
+
+  const paginationItems = getPaginationItems(page, totalPages);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -194,18 +230,22 @@ export function LogViewer({
               className={page <= 1 ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <PaginationItem key={p}>
-              <PaginationLink
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handlePageChange(p);
-                }}
-                isActive={page === p}
-              >
-                {p}
-              </PaginationLink>
+          {paginationItems.map((p, index) => (
+            <PaginationItem key={index}>
+              {typeof p === "string" ? (
+                <span className="px-4 py-2">{p}</span>
+              ) : (
+                <PaginationLink
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(p);
+                  }}
+                  isActive={page === p}
+                >
+                  {p}
+                </PaginationLink>
+              )}
             </PaginationItem>
           ))}
           <PaginationItem>
