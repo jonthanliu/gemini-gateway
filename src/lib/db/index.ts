@@ -8,26 +8,26 @@ declare global {
   var client: Client | undefined;
 }
 
-let client: Client;
-if (process.env.NODE_ENV === "production") {
-  client = createClient({
-    url: process.env.DATABASE_URL || "file:local.db",
+if (!global.client) {
+  const isTest = process.env.NODE_ENV === "test";
+  global.client = createClient({
+    url: isTest
+      ? "file::memory:?cache=shared"
+      : process.env.DATABASE_URL || "file:local.db",
   });
-} else {
-  if (!global.client) {
-    global.client = createClient({
-      url: process.env.DATABASE_URL || "file:local.db",
-    });
-  }
-  client = global.client;
-}
 
-export const db =
-  global.db ||
-  drizzle(client, {
+  // For production/development, enable WAL mode for better concurrency.
+  if (!isTest) {
+    global.client.execute("PRAGMA journal_mode = WAL;");
+    global.client.execute("PRAGMA busy_timeout = 5000;");
+  }
+}
+const client: Client = global.client;
+
+if (!global.db) {
+  global.db = drizzle(client, {
     schema,
   });
-
-if (process.env.NODE_ENV !== "production") {
-  global.db = db;
 }
+
+export const db = global.db;

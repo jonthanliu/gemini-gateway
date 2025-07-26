@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    globalSetup: "./vitest.setup.ts",
+    globalTeardown: "./vitest.setup.ts",
   },
   resolve: {
     alias: {
