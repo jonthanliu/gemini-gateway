@@ -1,4 +1,5 @@
 // app/anthropic/v1/messages/route.ts
+import { isAuthenticated } from "@/lib/auth/auth";
 import logger from "@/lib/logger";
 import { retryWithExponentialBackoff } from "@/lib/proxy/retry-handler";
 import { convertAnthropicToGemini } from "@/lib/transforms/anthropic-to-gemini";
@@ -47,6 +48,11 @@ async function proxyAnthropicRequest(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const authResponse = await isAuthenticated(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   try {
     return await proxyAnthropicRequest(req);
   } catch (error) {

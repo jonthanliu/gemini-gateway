@@ -1,3 +1,4 @@
+import { isAuthenticated } from "@/lib/auth/auth";
 import logger from "@/lib/logger";
 import { retryWithExponentialBackoff } from "@/lib/proxy/retry-handler";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -64,6 +65,11 @@ async function proxyEmbeddingsRequest(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const authResponse = await isAuthenticated(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   try {
     return await proxyEmbeddingsRequest(req);
   } catch (error) {

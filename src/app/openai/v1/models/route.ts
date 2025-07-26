@@ -1,6 +1,7 @@
+import { isAuthenticated } from "@/lib/auth/auth";
 import logger from "@/lib/logger";
 import { retryWithExponentialBackoff } from "@/lib/proxy/retry-handler";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const BASE_URL = "https://generativelanguage.googleapis.com";
 const API_VERSION = "v1beta";
@@ -41,7 +42,12 @@ async function proxyModelsRequest() {
   });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authResponse = await isAuthenticated(req);
+  if (authResponse) {
+    return authResponse;
+  }
+
   try {
     return await proxyModelsRequest();
   } catch (error) {
