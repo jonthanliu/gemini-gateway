@@ -1,5 +1,5 @@
 import type { Config } from "drizzle-kit";
-import "./src/lib/envConfig";
+import "./src/lib/config/envConfig";
 
 const dialect = process.env.DB_DIALECT || "sqlite";
 

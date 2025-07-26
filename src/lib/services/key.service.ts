@@ -1,5 +1,5 @@
 import { getSettings } from "@/lib/config/settings";
-import { db } from "@/lib/db.sqlite";
+import { db } from "@/lib/db";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import { and, count, desc, eq, gte, lt, max, sql } from "drizzle-orm";

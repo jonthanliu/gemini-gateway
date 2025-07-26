@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7c7390e1-99e0-4a36-8075-1994a5e1a1bf",
+  "id": "116b1b65-c4f0-4863-bc23-0c0a76412772",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "ApiKey": {
@@ -78,8 +78,7 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "uniqueConstraints": {}
     },
     "ErrorLog": {
       "name": "ErrorLog",
@@ -131,8 +130,7 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "uniqueConstraints": {}
     },
     "RequestLog": {
       "name": "RequestLog",
@@ -188,11 +186,18 @@
           "default": "(strftime('%s', 'now'))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "apiKeyIdx": {
+          "name": "apiKeyIdx",
+          "columns": [
+            "apiKey"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "uniqueConstraints": {}
     },
     "Setting": {
       "name": "Setting",
@@ -215,11 +220,9 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "uniqueConstraints": {}
     }
   },
-  "views": {},
   "enums": {},
   "_meta": {
     "schemas": {},

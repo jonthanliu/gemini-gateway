@@ -6,7 +6,7 @@ import {
   updateSetting as updateSettingInDb,
 } from "@/lib/config/settings";
 import { hashToken } from "@/lib/crypto";
-import { db } from "@/lib/db.sqlite";
+import { db } from "@/lib/db";
 import {
   apiKeys,
   errorLogs,
@@ -15,7 +15,6 @@ import {
 } from "@/lib/db/schema";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getLocale } from "@/lib/i18n/get-locale";
-import { resetKeyManager } from "@/lib/key-manager";
 import { resetKeyFailureCount, verifyKey } from "@/lib/services/key.service";
 import {
   and,
@@ -78,7 +77,6 @@ export async function addApiKeys(keysString: string) {
         "{count}",
         newKeysToAdd.length.toString()
       );
-      resetKeyManager();
       revalidatePath("/admin");
     } else {
       message += t.info.noNewKeys;
@@ -110,7 +108,6 @@ export async function deleteApiKeys(keys: string[]) {
       .delete(apiKeys)
       .where(inArray(apiKeys.key, keys))
       .returning();
-    resetKeyManager();
     revalidatePath("/admin");
     return {
       success: t.success.deleted.replace(
@@ -267,7 +264,6 @@ export async function updateSettings(settings: ParsedSettings) {
     await Promise.all(updates);
 
     resetSettings();
-    resetKeyManager();
     revalidatePath("/admin/config");
     revalidatePath("/admin");
 

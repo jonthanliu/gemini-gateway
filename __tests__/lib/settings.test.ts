@@ -1,7 +1,7 @@
-import { db } from "@/lib/db.sqlite";
+import { db } from "@/lib/db";
 import { settings as settingsTable } from "@/lib/db/schema";
 import {
-  getSettings,
+  unstable_getSettings as getSettings,
   updateSetting,
   resetSettings,
   defaultSettings,
@@ -13,12 +13,14 @@ describe("Settings Service", () => {
   const originalEnv = process.env;
 
   beforeEach(async () => {
+    vi.clearAllMocks();
     await db.delete(settingsTable);
     resetSettings();
     process.env = { ...originalEnv };
   });
 
   afterEach(async () => {
+    vi.clearAllMocks();
     process.env = originalEnv;
     await db.delete(settingsTable);
     resetSettings();
@@ -32,7 +34,6 @@ describe("Settings Service", () => {
     });
 
     it("should prioritize environment variables over defaults", async () => {
-      resetSettings(); // Clear cache before setting env var
       process.env.MAX_FAILURES = "10";
       process.env.TOOLS_CODE_EXECUTION_ENABLED = "true";
 
@@ -43,9 +44,7 @@ describe("Settings Service", () => {
 
     it("should prioritize database values over env and defaults", async () => {
       process.env.MAX_FAILURES = "5";
-      await db
-        .insert(settingsTable)
-        .values({ key: "MAX_FAILURES", value: "15" });
+      await updateSetting("MAX_FAILURES", "15");
 
       const settings = await getSettings();
       expect(settings.MAX_FAILURES).toBe(15);

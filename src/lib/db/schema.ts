@@ -1,17 +1,25 @@
 import { sql } from "drizzle-orm";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, real, sqliteTable, text, index } from "drizzle-orm/sqlite-core";
 
-export const requestLogs = sqliteTable("RequestLog", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  apiKey: text("apiKey").notNull(),
-  model: text("model").notNull(),
-  statusCode: integer("statusCode").notNull(),
-  isSuccess: integer("isSuccess", { mode: "boolean" }).notNull(),
-  latency: real("latency").notNull(),
-  createdAt: integer("createdAt", { mode: "timestamp" }).default(
-    sql`(strftime('%s', 'now'))`
-  ),
-});
+export const requestLogs = sqliteTable(
+  "RequestLog",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    apiKey: text("apiKey").notNull(),
+    model: text("model").notNull(),
+    statusCode: integer("statusCode").notNull(),
+    isSuccess: integer("isSuccess", { mode: "boolean" }).notNull(),
+    latency: real("latency").notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp" }).default(
+      sql`(strftime('%s', 'now'))`
+    ),
+  },
+  (table) => {
+    return {
+      apiKeyIdx: index("apiKeyIdx").on(table.apiKey),
+    };
+  }
+);
 
 export const errorLogs = sqliteTable("ErrorLog", {
   id: integer("id").primaryKey({ autoIncrement: true }),

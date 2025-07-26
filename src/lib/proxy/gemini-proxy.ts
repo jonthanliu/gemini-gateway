@@ -66,6 +66,33 @@ export function createReadableStream(
   });
 }
 
+async function fetchWithRetries(url: string, options: FetchOptions, maxRetries: number, retryDelay: number) {
+  let lastError: Error | null = null;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      // We only retry on specific network errors, so if we get a response,
+      // we exit the loop regardless of the status code.
+      return response;
+    } catch (error: unknown) {
+      lastError = error as Error;
+      if (
+        error instanceof TypeError &&
+        error.message.includes("fetch failed")
+      ) {
+        logger.warn(
+          `Fetch failed, retrying... (${i + 1}/${maxRetries})`,
+          error
+        );
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        continue;
+      }
+      throw error; // Rethrow non-retryable errors
+    }
+  }
+  throw lastError || new Error("Failed to fetch from Gemini after multiple retries");
+}
+
 export async function proxyRequest(request: NextRequest, pathPrefix: string) {
   const startTime = Date.now();
   const timings = {
@@ -120,43 +147,10 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
       fetchOptions.agent = new HttpsProxyAgent(settings.PROXY_URL);
     }
 
-    let geminiResponse: Response | null = null;
-    let lastError: Error | null = null;
-    const maxRetries = settings.MAX_FAILURES;
-    const retryDelay = 500;
-
     t = Date.now();
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        geminiResponse = await fetch(geminiUrl, fetchOptions);
-        // We only retry on specific network errors, so if we get a response,
-        // we exit the loop regardless of the status code.
-        break;
-      } catch (error: unknown) {
-        lastError = error as Error;
-        if (
-          error instanceof TypeError &&
-          error.message.includes("fetch failed")
-        ) {
-          logger.warn(
-            `Fetch failed, retrying... (${i + 1}/${maxRetries})`,
-            error
-          );
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
-          continue;
-        }
-        throw error; // Rethrow non-retryable errors
-      }
-    }
+    const geminiResponse = await fetchWithRetries(geminiUrl, fetchOptions, settings.MAX_FAILURES, 500);
     timings.fetch = Date.now() - t;
-
-    if (!geminiResponse) {
-      throw (
-        lastError ||
-        new Error("Failed to fetch from Gemini after multiple retries")
-      );
-    }
-
+    
     // If the response is streaming, we pipe it through.
     if (
       geminiResponse.headers.get("Content-Type")?.includes("text/event-stream")

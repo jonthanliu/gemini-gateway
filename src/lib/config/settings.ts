@@ -1,4 +1,4 @@
-import { db } from "@/lib/db.sqlite";
+import { db } from "@/lib/db";
 import { settings as settingsTable } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 import type { InferSelectModel } from "drizzle-orm";
@@ -8,10 +8,9 @@ let settingsCache: ParsedSettings | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+
 // 定义默认配置
 export const defaultSettings = {
-  AUTH_TOKEN: "", // Add AUTH_TOKEN to the defaults
-  ALLOWED_TOKENS: "",
   MAX_FAILURES: "3",
   HEALTH_CHECK_MODEL: "gemini-1.5-flash",
   PROXY_URL: "", // Optional proxy URL
@@ -39,7 +38,11 @@ export type ParsedSettings = {
   THINKING_BUDGET_MAP: { [key: string]: number };
 };
 
-type Settings = typeof defaultSettings;
+type Settings = typeof defaultSettings & {
+  AUTH_TOKEN?: string;
+  ALLOWED_TOKENS?: string;
+};
+
 /**
  * 获取所有配置项。
  * 从数据库加载，并处理环境变量和默认值。
@@ -52,6 +55,13 @@ export async function getSettings(): Promise<ParsedSettings> {
     return settingsCache;
   }
 
+  const parsed = await unstable_getSettings();
+  settingsCache = parsed;
+  cacheTimestamp = now;
+  return parsed;
+}
+
+export async function unstable_getSettings(): Promise<ParsedSettings> {
   logger.debug("Fetching settings from database");
   let settingsMap = new Map<string, string>();
   type SettingSelect = InferSelectModel<typeof settingsTable>;
@@ -71,30 +81,37 @@ export async function getSettings(): Promise<ParsedSettings> {
 
   const resolvedSettings: Settings = { ...defaultSettings };
 
-  for (const key of Object.keys(defaultSettings) as (keyof Settings)[]) {
-    let value = settingsMap.get(key);
-
-    if (value === undefined) {
+  for (const key of Object.keys(defaultSettings) as (keyof typeof defaultSettings)[]) {
+    const dbValue = settingsMap.get(key);
+    if (dbValue !== undefined) {
+      resolvedSettings[key] = dbValue;
+    } else {
       const envValue = process.env[key];
       if (envValue !== undefined) {
-        value = envValue;
-      } else {
-        value = defaultSettings[key];
+        resolvedSettings[key] = envValue;
       }
     }
-    resolvedSettings[key] = value;
   }
 
-  const parsed = parseSettings(resolvedSettings);
-  settingsCache = parsed;
-  cacheTimestamp = now;
-  return parsed;
+  // Handle settings not in defaultSettings
+  resolvedSettings.AUTH_TOKEN =
+    settingsMap.get("AUTH_TOKEN") || process.env.AUTH_TOKEN || "";
+  resolvedSettings.ALLOWED_TOKENS =
+    settingsMap.get("ALLOWED_TOKENS") || process.env.ALLOWED_TOKENS || "";
+
+  return parseSettings(resolvedSettings);
 }
 
 function parseSettings(settings: Settings): ParsedSettings {
+  const maxFailures = parseInt(settings.MAX_FAILURES, 10);
+  if (isNaN(maxFailures)) {
+    logger.warn(`Invalid MAX_FAILURES value: "${settings.MAX_FAILURES}". Defaulting to 3.`);
+    settings.MAX_FAILURES = "3";
+  }
+
   return {
-    AUTH_TOKEN: settings.AUTH_TOKEN,
-    ALLOWED_TOKENS: settings.ALLOWED_TOKENS,
+    AUTH_TOKEN: settings.AUTH_TOKEN || "",
+    ALLOWED_TOKENS: settings.ALLOWED_TOKENS || "",
     MAX_FAILURES: parseInt(settings.MAX_FAILURES, 10),
     HEALTH_CHECK_MODEL: settings.HEALTH_CHECK_MODEL,
     PROXY_URL: settings.PROXY_URL,
@@ -104,6 +121,7 @@ function parseSettings(settings: Settings): ParsedSettings {
     THINKING_BUDGET_MAP: JSON.parse(settings.THINKING_BUDGET_MAP),
   };
 }
+
 
 /**
  * 清空配置缓存。
@@ -124,5 +142,5 @@ export async function updateSetting(key: string, value: string) {
     target: settingsTable.key,
     set: { value },
   });
-  resetSettings(); // Invalidate the cache
+  resetSettings();
 }

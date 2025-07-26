@@ -9,7 +9,6 @@ CREATE TABLE `ApiKey` (
 	`enabled` integer DEFAULT true NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `ApiKey_key_unique` ON `ApiKey` (`key`);--> statement-breakpoint
 CREATE TABLE `ErrorLog` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`apiKey` text,
@@ -33,3 +32,6 @@ CREATE TABLE `Setting` (
 	`key` text PRIMARY KEY NOT NULL,
 	`value` text NOT NULL
 );
+--> statement-breakpoint
+CREATE UNIQUE INDEX `ApiKey_key_unique` ON `ApiKey` (`key`);--> statement-breakpoint
+CREATE INDEX `apiKeyIdx` ON `RequestLog` (`apiKey`);

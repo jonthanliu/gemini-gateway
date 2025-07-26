@@ -1,4 +1,4 @@
-import { db } from "@/lib/db.sqlite";
+import { db } from "@/lib/db";
 import { errorLogs, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
 

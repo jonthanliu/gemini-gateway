@@ -1,5 +1,5 @@
 import { updateSetting } from "@/lib/config/settings";
-import { db } from "@/lib/db.sqlite";
+import { db } from "@/lib/db";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import { getNextWorkingKey, getAllKeys } from "@/lib/services/key.service";
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
