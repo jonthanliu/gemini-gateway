@@ -1,9 +1,7 @@
 "use server";
 
-import { getSettings, updateSetting } from "@/lib/config/settings";
-import { hashToken, verifyToken } from "@/lib/crypto";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getLocale } from "@/lib/i18n/get-locale";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 import logger from "@/lib/logger";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -23,29 +21,12 @@ export async function login(
     return { error: t.error.emptyToken };
   }
 
-  const settings = await getSettings();
-  const storedAuthTokenHash = settings.AUTH_TOKEN;
-  logger.info(`Stored auth token hash exists: ${!!storedAuthTokenHash}`);
+  const masterToken = process.env.AUTH_TOKEN;
 
-  // Case 1: System is already configured with a hashed token.
-  if (storedAuthTokenHash && storedAuthTokenHash !== "") {
-    const isValid = await verifyToken(submittedToken, storedAuthTokenHash);
-    if (!isValid) {
-      logger.warn("Login failed: Invalid token.");
-      return { error: t.error.invalidToken };
-    }
-  }
-  // Case 2: Initial setup. The first submitted token sets the new hash.
-  else {
-    logger.info("Initial setup: Hashing new token...");
-    const newHash = await hashToken(submittedToken);
-    try {
-      await updateSetting("AUTH_TOKEN", newHash);
-      logger.info("AUTH_TOKEN has been set.");
-    } catch (error) {
-      logger.error({ error }, "Error calling updateSetting.");
-      return { error: t.error.failedToSaveToken };
-    }
+  // Since we have a startup check, masterToken is guaranteed to be set.
+  if (submittedToken !== masterToken) {
+    logger.warn("Login failed: Invalid token.");
+    return { error: t.error.invalidToken };
   }
 
   logger.info("Login successful. Setting cookie and redirecting.");
