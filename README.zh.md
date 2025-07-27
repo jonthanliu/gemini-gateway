@@ -29,8 +29,6 @@
 
 ### 使用 Docker 自行部署 (推荐)
 
-使用 Docker 部署是启动并运行 Gemini Gateway 的最简单方法。
-
 1.  **克隆仓库:**
 
     ```bash
@@ -39,31 +37,81 @@
     ```
 
 2.  **配置您的环境:**
-    创建一个 `.env` 文件并添加以下内容：
+    复制示例环境文件。这是您的网关配置的唯一真实来源。
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    现在，编辑 `.env` 文件。**所有字段都是必填项。**
 
     ```env
-    # 容器内生产数据库的路径
-    DATABASE_URL="file:/app/data/prod.db"
+    # --- 安全设置 (必填) ---
+    # 这是 Web 管理后台的登录密码。
+    AUTH_TOKEN="your_super_secret_admin_password"
 
-    # (可选) 用于 cron 作业端点的安全密钥
-    CRON_SECRET="一个非常安全的随机字符串"
+    # 您的 API 客户端将用于身份验证的令牌列表，以逗号分隔。
+    ALLOWED_TOKENS="client_token_1,client_token_2"
+
+    # 用于签署 Web UI 会话令牌 (JWT) 的强随机密钥。
+    # 您可以在这里生成一个: https://www.uuidgenerator.net/
+    WEB_JWT_SECRET="your_strong_and_random_jwt_secret"
+
+    # --- 数据库 (Docker部署时无需更改) ---
+    DATABASE_URL="file:/app/data/prod.db"
     ```
 
 3.  **使用 Docker Compose 运行:**
-
-    建议挂载卷以实现持久化存储，从而保留数据库。该卷应挂载在 `/app/data`。
 
     ```bash
     docker-compose up --build -d
     ```
 
-4.  **首次设置:**
-    - 打开浏览器并访问 `http://你的服务器IP:3000/admin`。
-    - 系统将提示您输入密码。**输入一个新的、强密码**以保护管理仪表盘。这将成为您的永久管理员密码。
-    - 转到 **Keys** 标签页并添加您的 Gemini API 密钥。
-    - 转到 **Configuration** 标签页并添加“允许的 API 令牌”。这些是您的客户端应用程序将用于身份验证的令牌。**强烈建议在首次运行时设置允许的令牌，否则 API 将对公众开放，可能导致 Gemini 流量过度消耗。**
+4.  **访问管理后台与初始设置:**
+    - 打开浏览器并访问 `http://你的服务器IP:3000`。
+    - 系统将提示您登录。请使用您在 `.env` 文件中为 `AUTH_TOKEN` 设置的密码。
+    - 登录后，系统将引导您添加第一个 Gemini API 密钥。
+    - 添加密钥后，您将被重定向到主仪表盘。
 
 您的网关现在已上线并准备好处理请求！
+
+### 使用预构建的 Docker 镜像 (最简单)
+
+如果您不想在本地构建镜像，可以直接使用我们通过 GitHub Actions 自动构建并发布在 `ghcr.io` 上的最新镜像。
+
+1.  **创建 `docker-compose.yml` 文件:**
+    在您的服务器上，创建一个名为 `docker-compose.yml` 的文件，并填入以下内容。它会直接拉取最新的 `main` 分支镜像。
+
+    ```yaml
+    version: "3.8"
+
+    services:
+      app:
+        image: ghcr.io/jonthanliu/gemini-gateway:main
+        restart: always
+        ports:
+          - "3000:3000"
+        volumes:
+          - ./data:/app/data
+        env_file:
+          - .env
+    ```
+
+2.  **创建并配置 `.env` 文件:**
+    和之前的步骤一样，创建 `.env` 文件并填入您的配置。
+
+    ```bash
+    cp .env.example .env
+    # 编辑 .env 文件...
+    ```
+
+3.  **启动服务:**
+
+    ```bash
+    docker-compose up -d
+    ```
+
+    Docker 将会自动从 `ghcr.io` 拉取镜像并启动服务。这种方法跳过了在您本地机器上的整个构建过程，部署起来更快。
 
 ## 🔌 客户端使用示例
 
@@ -80,7 +128,7 @@
     ```
     http://<你的域名或服务器IP>:3000
     ```
-3.  将 **API Key** 设置为您在管理后台“允许的 API 令牌”中创建的令牌。
+3.  将 **API Key** 设置为您在 `.env` 文件的 `ALLOWED_TOKENS` 列表中定义的令牌之一。
 
 ### Anthropic 兼容客户端
 
@@ -90,8 +138,8 @@
 # 设置您的网关地址
 export ANTHROPIC_BASE_URL=http://<你的域名或服务器IP>:3000
 
-# 设置您在管理后台创建的 API 令牌
-export ANTHROPIC_API_KEY=<你设置的令牌>
+# 设置您 ALLOWED_TOKENS 列表中的一个令牌
+export ANTHROPIC_API_KEY=<你的客户端令牌>
 
 # 现在运行您的工具
 claude
@@ -106,12 +154,13 @@ claude
     ```
     http://<你的域名或服务器IP>:3000/openai/v1
     ```
-3.  将 **API Key** 设置为您在管理后台创建的“允许的 API 令牌”之一。
+3.  将 **API Key** 设置为您 `ALLOWED_TOKENS` 列表中的令牌之一。
 4.  选择一个模型名称（例如 `gemini-pro`）并开始使用。
 
 ## ⚠️ 重要提示与免责声明
 
-- **密码恢复**: 如果您忘记了管理员密码，可以登录到 Docker 主机服务器并重置。最简单的方法是删除数据库文件并重新部署容器。对于高级用户，您可以从数据库的 `Setting` 表中删除 `auth_token` 条目，然后登录到管理仪表盘以设置新密码。
+- **密码恢复**: 如果您忘记了管理员密码，只需编辑 `.env` 文件中的 `AUTH_TOKEN` 并重启容器 (`docker-compose restart`) 即可。
+- **不再需要 Cron 作业**: 密钥健康检查机制已被重构。网关现在会自动将失败的密钥禁用一小段时间。您不再需要设置外部 cron 作业。
 - **AI 生成的代码**: 本项目主要由 AI 助手开发。虽然功能可用，但可能包含意外行为。
 - **风险自负**: 这是一个“按原样”提供的开源项目。作者和贡献者不对因使用本项目而导致的任何损害或损失负责，包括但不限于 API 密钥泄露或经济损失。在生产环境中部署前，请仔细审查代码和安全配置。
 - **欢迎贡献**: 我们欢迎 Pull Request！请注意，贡献也将由 AI 进行审查。
@@ -123,3 +172,4 @@ claude
 - **[gemini-balance](https://github.com/snailyp/gemini-balance)** by **snailyp**: 最初的 Python 项目，为本网关提供了核心灵感。
 - **[lemmy](https://github.com/badlogic/lemmy)** by **badlogic**: 展示了健壮且可扩展的应用程序架构。
 - **[gemini-balance-nextjs](https://github.com/jonthanliu/gemini-balance-nextjs)**: 本项目的前身，为当前的实现奠定了基础。
+- **[openai-gemini](https://github.com/PublicAffairs/openai-gemini.git)** by **PublicAffairs**: 一个为 Gemini 模型提供 OpenAI 兼容 API 的项目。
