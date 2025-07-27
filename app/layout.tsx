@@ -1,12 +1,6 @@
-import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
-
-if (!process.env.AUTH_TOKEN) {
-  throw new Error(
-    "FATAL: AUTH_TOKEN is not configured. The application cannot start securely."
-  );
-}
 
 export const metadata = {
   title: "Gemini Gateway",
