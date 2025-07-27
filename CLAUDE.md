@@ -6,19 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js application that acts as an intelligent AI gateway for Google's Gemini models. It provides a unified API interface with endpoints compatible with OpenAI, Anthropic, and native Gemini protocols. Key features include load balancing across multiple API keys, automatic failover, and a web-based admin dashboard for managing keys and configurations.
 
-The application is built with the Next.js App Router, TypeScript, and uses Drizzle ORM with SQLite for the database.
+The application is built with the Next.js App Router, TypeScript, and uses Drizzle ORM with SQLite for the database. The project structure has been flattened, and there is no `src` directory.
 
 ## High-Level Architecture
 
-- **API Routes**: The core proxy logic is implemented as API routes within the `src/app` directory.
-  - OpenAI compatibility: `src/app/openai/v1/`
-  - Anthropic compatibility: `src/app/anthropic/v1/`
-  - Native Gemini: `src/app/gemini/v1/`
-- **Key Management**: The `src/lib/services/key.service.ts` is responsible for managing the pool of Gemini API keys, including selection, load balancing, and tracking failures.
-- **Configuration**: Application settings are managed through `src/lib/config/settings.ts` and can be configured dynamically via the admin dashboard.
-- **Database**: The project uses SQLite with Drizzle ORM. The schema is defined in `src/lib/db/schema.ts`, and migrations are handled by `drizzle-kit`.
-- **Admin Dashboard**: A React-based UI under `src/app/[lang]/admin/` allows for real-time management of API keys, settings, and viewing logs.
-- **Authentication**: Middleware at `src/middleware.ts` protects the admin routes and authenticates API requests.
+- **API Routes**: The core proxy logic is implemented as API routes within the `app/(api)` route group.
+  - OpenAI compatibility: `app/(api)/openai/v1/`
+  - Anthropic compatibility: `app/(api)/anthropic/v1/`
+  - Native Gemini: `app/(api)/gemini/v1/`
+- **WebApp Routes**: The frontend admin dashboard is located under the `app/(webapp)` route group. All WebApp routes are automatically prefixed with a language code (e.g., `/en/...`) by the middleware.
+- **Key Management**: The `lib/services/key.service.ts` is responsible for managing the pool of Gemini API keys, including selection, load balancing, and tracking failures.
+- **Configuration**: Application settings are managed through `lib/config/settings.ts` and can be configured dynamically via the admin dashboard.
+- **Database**: The project uses SQLite with Drizzle ORM. The schema is defined in `lib/db/schema.ts`, and migrations are handled by `drizzle-kit`.
+- **Admin Dashboard**: A React-based UI under `app/(webapp)/[lang]/admin/` allows for real-time management of API keys, settings, and viewing logs.
+- **Authentication**: A central middleware at `./middleware.ts` protects all non-public routes. It handles both API token validation and WebApp cookie-based authentication.
 
 ## Common Development Commands
 
@@ -62,7 +63,6 @@ The application is built with the Next.js App Router, TypeScript, and uses Drizz
 ## 一些知识点
 
 - middleware：https://nextjs.org/docs/app/api-reference/file-conventions/middleware
-
 - async params：https://nextjs.org/docs/messages/sync-dynamic-apis
 
 ## **2. 你的标准作业流程 (SOP) - 必须严格遵守**
