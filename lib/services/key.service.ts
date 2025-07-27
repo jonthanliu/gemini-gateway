@@ -147,3 +147,21 @@ export async function getAllKeys() {
     disabledUntil: k.disabledUntil,
   }));
 }
+
+/**
+ * Checks if there is at least one API key in the database.
+ * This is a highly efficient query for onboarding checks.
+ *
+ * @returns {Promise<boolean>} True if at least one key exists, false otherwise.
+ */
+export async function hasApiKeys(): Promise<boolean> {
+  try {
+    const result = await db.select({ count: count() }).from(apiKeys).limit(1);
+    return result.length > 0 && result[0].count > 0;
+  } catch (error) {
+    logger.error({ error }, "Failed to check for existence of API keys.");
+    // In case of a database error, we should probably assume no keys exist
+    // to avoid locking users out of the onboarding process.
+    return false;
+  }
+}
