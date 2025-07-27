@@ -263,6 +263,7 @@
     "loginForm": {
         "title": "Admin Access",
         "tokenLabel": "Authentication Token",
+        "tokenHint": "Use the AUTH_TOKEN set in your environment variables.",
         "signIn": "Sign in",
         "signingIn": "Signing in...",
         "error": {

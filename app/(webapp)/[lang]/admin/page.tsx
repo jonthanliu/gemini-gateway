@@ -15,6 +15,8 @@ import { KeyList } from "./KeyList";
 
 export const revalidate = 0; // Disable caching
 
+import { Onboarding } from "./Onboarding";
+
 export default async function AdminPage({
   params: paramsPromise,
 }: {
@@ -36,6 +38,10 @@ export default async function AdminPage({
     enabled: keyStats.enabled ?? 0,
     invalid: keyStats.invalid ?? 0,
   };
+
+  if (keys.length === 0) {
+    return <Onboarding dictionary={dictionary.keys} />;
+  }
 
   return (
     <div className="flex flex-col gap-4">

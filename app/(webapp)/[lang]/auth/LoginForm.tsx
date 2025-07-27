@@ -85,6 +85,7 @@ export default function LoginForm({
               >
                 {dictionary.tokenLabel}
               </label>
+              <p className="mt-1 text-xs text-gray-500">{dictionary.tokenHint}</p>
               <input
                 id="token"
                 name="token"

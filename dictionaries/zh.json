@@ -264,6 +264,7 @@
     "loginForm": {
         "title": "管理员访问",
         "tokenLabel": "身份验证令牌",
+        "tokenHint": "请使用您在环境变量中设置的 AUTH_TOKEN。",
         "signIn": "登录",
         "signingIn": "登录中...",
         "error": {
