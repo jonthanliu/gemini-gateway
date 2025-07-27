@@ -4,7 +4,8 @@
     "private": true,
     "scripts": {
         "prepare": "husky",
-        "dev": "next dev | pino-pretty",
+        "dev": "next dev",
+        "dev:pretty": "next dev | pino-pretty",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
