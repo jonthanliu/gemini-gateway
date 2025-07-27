@@ -1,17 +1,11 @@
+
 import { db } from "@/lib/db";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
-import { and, count, desc, eq, isNull, lte, max, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, lte, max, or, sql } from "drizzle-orm";
 
 const KEY_COOLDOWN_PERIOD_SECONDS = 5 * 60; // 5 minutes
 
-/**
- * Gets the next available API key using a stateless, random-choice strategy.
- * This is efficient and works well for load balancing in serverless environments.
- *
- * @returns A valid API key string
- * @throws Error if no valid keys are available
- */
 export async function getNextWorkingKey(): Promise<string> {
   const now = new Date();
   const validKeys = await db
@@ -30,28 +24,19 @@ export async function getNextWorkingKey(): Promise<string> {
     );
   }
 
-  // Randomly select a key from the pool of valid keys.
   const keyToUse = validKeys[Math.floor(Math.random() * validKeys.length)];
-
   logger.info(
     { key: `...${keyToUse.key.slice(-4)}` },
     "Selected API key using stateless random choice strategy."
   );
-
   return keyToUse.key;
 }
 
-/**
- * Puts a failing API key into a timed cooldown period.
- *
- * @param key - The API key that failed
- */
 export async function handleApiFailure(key: string): Promise<void> {
   const now = new Date();
   const disabledUntil = new Date(
     now.getTime() + KEY_COOLDOWN_PERIOD_SECONDS * 1000
   );
-
   try {
     await db
       .update(apiKeys)
@@ -61,7 +46,6 @@ export async function handleApiFailure(key: string): Promise<void> {
         lastFailedAt: now,
       })
       .where(eq(apiKeys.key, key));
-
     logger.warn(
       {
         key: `...${key.slice(-4)}`,
@@ -77,11 +61,6 @@ export async function handleApiFailure(key: string): Promise<void> {
   }
 }
 
-/**
- * Resets the status of an API key, making it available for use again.
- *
- * @param key - The API key to reset
- */
 export async function resetKeyStatus(key: string): Promise<void> {
   try {
     await db
@@ -91,7 +70,6 @@ export async function resetKeyStatus(key: string): Promise<void> {
         lastChecked: new Date(),
       })
       .where(eq(apiKeys.key, key));
-
     logger.info(
       { key: `...${key.slice(-4)}` },
       "Key status reset. Key is now active."
@@ -104,15 +82,8 @@ export async function resetKeyStatus(key: string): Promise<void> {
   }
 }
 
-/**
- * Gets all API keys with their comprehensive usage statistics in a single, optimized query.
- *
- * @returns Array of key information objects, including aggregated stats.
- */
 export async function getAllKeys() {
   const now = new Date();
-
-  // Subquery to aggregate request log data for each key
   const keyStatsSubQuery = db
     .select({
       apiKey: requestLogs.apiKey,
@@ -126,7 +97,6 @@ export async function getAllKeys() {
     .from(requestLogs)
     .groupBy(requestLogs.apiKey)
     .as("keyStats");
-
   const keysWithStats = await db
     .select({
       id: apiKeys.id,
@@ -143,7 +113,6 @@ export async function getAllKeys() {
     .from(apiKeys)
     .leftJoin(keyStatsSubQuery, eq(apiKeys.key, keyStatsSubQuery.apiKey))
     .orderBy(desc(apiKeys.createdAt));
-
   return keysWithStats.map((k) => ({
     ...k,
     isWorking:
@@ -154,56 +123,189 @@ export async function getAllKeys() {
     disabledUntil: k.disabledUntil,
   }));
 }
+export type GetAllKeysReturnType = Awaited<ReturnType<typeof getAllKeys>>;
 
-/**
- * Checks if there is at least one API key in the database.
- * This is a highly efficient query for onboarding checks.
- *
- * @returns {Promise<boolean>} True if at least one key exists, false otherwise.
- */
 export async function hasApiKeys(): Promise<boolean> {
   try {
     const result = await db.select({ count: count() }).from(apiKeys).limit(1);
     return result.length > 0 && result[0].count > 0;
   } catch (error) {
     logger.error({ error }, "Failed to check for existence of API keys.");
-    // In case of a database error, we should probably assume no keys exist
-    // to avoid locking users out of the onboarding process.
     return false;
   }
 }
 
-/**
- * Adds multiple API keys to the database.
- *
- * @param {string[]} keys - An array of API key strings to add.
- * @returns {Promise<any[]>} The newly inserted key records.
- * @throws {Error} If the keys array is empty or if insertion fails.
- */
-export async function addApiKeys(keys: string[]) {
+export async function addApiKeys(
+  keys: string[]
+): Promise<{ added: number; duplicates: number }> {
   if (!keys || keys.length === 0) {
-    throw new Error("No keys provided to add.");
+    return { added: 0, duplicates: 0 };
   }
-
-  const newKeys = keys.map((key) => ({
-    key,
-    enabled: true,
-  }));
-
+  const uniqueKeys = [...new Set(keys)].filter(Boolean);
+  if (uniqueKeys.length === 0) {
+    return { added: 0, duplicates: 0 };
+  }
   try {
-    const result = await db.insert(apiKeys).values(newKeys).returning();
-    logger.info({ count: result.length }, "Successfully added new API keys.");
-    return result;
-  } catch (error) {
-    logger.error({ error }, "Failed to add new API keys.");
-    if (
-      error instanceof Error &&
-      error.message.includes("UNIQUE constraint failed")
-    ) {
-      throw new Error(
-        "One or more keys already exist. Please provide unique keys."
+    const existingKeysResult = await db
+      .select({ key: apiKeys.key })
+      .from(apiKeys)
+      .where(inArray(apiKeys.key, uniqueKeys));
+    const existingKeySet = new Set(existingKeysResult.map((k) => k.key));
+    const newKeysToAdd = uniqueKeys.filter(
+      (key) => !existingKeySet.has(key)
+    );
+    const duplicates = uniqueKeys.length - newKeysToAdd.length;
+    if (newKeysToAdd.length > 0) {
+      const newKeyRecords = newKeysToAdd.map((key) => ({
+        key,
+        enabled: true,
+      }));
+      await db.insert(apiKeys).values(newKeyRecords);
+      logger.info(
+        { count: newKeysToAdd.length },
+        "Successfully added new API keys."
       );
     }
-    throw new Error("An unexpected error occurred while adding keys.");
+    if (duplicates > 0) {
+      logger.info(
+        { count: duplicates },
+        "Skipped duplicate API keys during insertion."
+      );
+    }
+    return { added: newKeysToAdd.length, duplicates };
+  } catch (error) {
+    logger.error({ error }, "Failed to add new API keys during DB operation.");
+    throw new Error("An unexpected database error occurred while adding keys.");
+  }
+}
+
+export async function deleteApiKeys(keys: string[]) {
+  if (!keys || keys.length === 0) {
+    throw new Error("No keys provided for deletion.");
+  }
+  const deleteResponse = await db
+    .delete(apiKeys)
+    .where(inArray(apiKeys.key, keys))
+    .returning();
+  logger.info({ count: deleteResponse.length }, "Successfully deleted API keys.");
+  return deleteResponse;
+}
+
+export async function getKeyUsageDetails(apiKey: string) {
+  const where = eq(requestLogs.apiKey, apiKey);
+  const statsResult = await db
+    .select({
+      total: count(),
+      success: count(sql<number>`CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 END`),
+    })
+    .from(requestLogs)
+    .where(where);
+  const { total, success } = statsResult[0] || { total: 0, success: 0 };
+  const failed = total - success;
+  const recentLogs = await db
+    .select({
+      id: requestLogs.id,
+      model: requestLogs.model,
+      statusCode: requestLogs.statusCode,
+      isSuccess: requestLogs.isSuccess,
+      createdAt: requestLogs.createdAt,
+    })
+    .from(requestLogs)
+    .where(where)
+    .orderBy(desc(requestLogs.createdAt))
+    .limit(50);
+  return {
+    stats: { total, success, failed },
+    logs: recentLogs,
+  };
+}
+
+export async function getSystemApiCallStats() {
+  const now = new Date();
+  const oneMinuteAgo = new Date(now.getTime() - 1 * 60 * 1000);
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  try {
+    const callsLastMinuteResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(gte(requestLogs.createdAt, oneMinuteAgo));
+    const callsLastHourResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(gte(requestLogs.createdAt, oneHourAgo));
+    const callsLast24HoursResult = await db
+      .select({ count: count() })
+      .from(requestLogs)
+      .where(gte(requestLogs.createdAt, twentyFourHoursAgo));
+    return {
+      "1m": { total: callsLastMinuteResult[0]?.count ?? 0 },
+      "1h": { total: callsLastHourResult[0]?.count ?? 0 },
+      "24h": { total: callsLast24HoursResult[0]?.count ?? 0 },
+    };
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch system API call stats.");
+    return { "1m": { total: 0 }, "1h": { total: 0 }, "24h": { total: 0 } };
+  }
+}
+
+export async function getDetailedKeyStats() {
+  try {
+    const allKeys = await db
+      .select({
+        key: apiKeys.key,
+        enabled: apiKeys.enabled,
+        createdAt: apiKeys.createdAt,
+        lastUsed: apiKeys.lastUsed,
+      })
+      .from(apiKeys)
+      .orderBy(desc(apiKeys.createdAt));
+    return allKeys;
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch detailed key stats.");
+    throw new Error("Failed to fetch detailed key stats.");
+  }
+}
+
+type TimeFrame = "1m" | "1h" | "24h";
+
+export async function getDetailedApiCallStats(timeframe: TimeFrame) {
+  const now = new Date();
+  let gteDate: Date;
+  switch (timeframe) {
+    case "1m":
+      gteDate = new Date(now.getTime() - 1 * 60 * 1000);
+      break;
+    case "1h":
+      gteDate = new Date(now.getTime() - 60 * 60 * 1000);
+      break;
+    case "24h":
+      gteDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+  }
+  try {
+    const where = gte(requestLogs.createdAt, gteDate);
+    const recentLogs = await db
+      .select()
+      .from(requestLogs)
+      .where(where)
+      .orderBy(desc(requestLogs.createdAt))
+      .limit(100);
+    const statsResult = await db
+      .select({
+        total: count(),
+        success: count(sql<number>`CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 END`),
+      })
+      .from(requestLogs)
+      .where(where);
+    const { total, success } = statsResult[0] || { total: 0, success: 0 };
+    const failed = total - success;
+    return { logs: recentLogs, stats: { total, success, failed } };
+  } catch (error) {
+    logger.error(
+      { error, timeframe },
+      `Failed to fetch detailed API call stats for ${timeframe}.`
+    );
+    throw new Error(`Failed to fetch detailed API call stats for ${timeframe}.`);
   }
 }
