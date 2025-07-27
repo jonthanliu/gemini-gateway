@@ -56,9 +56,6 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
-      drizzle-kit:
-        specifier: ^0.22.0
-        version: 0.22.8
       drizzle-orm:
         specifier: ^0.31.2
         version: 0.31.4(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.4)(@types/react@19.1.8)(better-sqlite3@12.2.0)(pg@8.16.3)(react@19.1.0)
@@ -138,6 +135,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.6)
+      drizzle-kit:
+        specifier: ^0.22.0
+        version: 0.22.8
       eslint:
         specifier: ^9
         version: 9.31.0(jiti@2.4.2)
