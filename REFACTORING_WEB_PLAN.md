@@ -38,6 +38,15 @@
 - **操作**: 创建了新的 `LoginForm` 客户端组件及其对应的 `login` Server Action 的骨架。
 - **功能**: 这确立了使用 `useActionState` 和 `useFormStatus` 的现代化表单处理模式，无需传统的 API 端点，即可直接将客户端表单连接到服务端逻辑，提供了响应灵敏且友好的用户体验。
 
+### 8. 实现安全登录流程
+- **操作**:
+  1.  添加 `jsonwebtoken` 依赖用于处理 JWT。
+  2.  在 `lib/auth/web_auth.ts` 中实现了 JWT 的签发 (`signJwtForWebApp`) 和验证 (`verifyJwtForWebApp`) 逻辑，并确保 `WEB_JWT_SECRET` 仅通过环境变量配置，增强了安全性。
+  3.  创建了 `login` Server Action (`app/(web)/[lang]/admin/actions/login.action.ts`)，负责处理用户密码验证、JWT 签发，并通过 `httpOnly` Cookie 安全地存储令牌。
+  4.  在 `login` Action 成功后，使用 `revalidatePath` 和 `redirect` 来更新UI并导航到管理后台，确保了流畅的用户体验。
+  5.  更新了 `LoginForm.tsx` 客户端组件，使其与 `login` Action 的状态和数据结构完全兼容。
+- **目的**: 将原有的骨架升级为功能完整的、安全的、基于 JWT 的 WebApp 登录系统。
+
 ---
 
 至此，基础架构搭建工作已全部完成。新架构现已准备就绪，可以开始进行功能迁移。
