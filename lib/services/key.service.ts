@@ -13,7 +13,7 @@ const KEY_COOLDOWN_PERIOD_SECONDS = 5 * 60; // 5 minutes
  * @throws Error if no valid keys are available
  */
 export async function getNextWorkingKey(): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
+  const now = new Date();
   const validKeys = await db
     .select({ key: apiKeys.key })
     .from(apiKeys)
@@ -105,7 +105,7 @@ export async function resetKeyStatus(key: string): Promise<void> {
  * @returns Array of key information objects, including aggregated stats.
  */
 export async function getAllKeys() {
-  const now = Math.floor(Date.now() / 1000);
+  const now = new Date();
 
   // Subquery to aggregate request log data for each key
   const keyStatsSubQuery = db
@@ -141,7 +141,7 @@ export async function getAllKeys() {
 
   return keysWithStats.map((k) => ({
     ...k,
-    isWorking: k.enabled && (!k.disabledUntil || k.disabledUntil.getTime() / 1000 <= now),
+    isWorking: k.enabled && (!k.disabledUntil || k.disabledUntil.getTime() <= now.getTime()),
     failedRequests: k.totalRequests - k.successfulRequests,
     lastUsed: k.lastUsed ? new Date(k.lastUsed) : null,
     disabledUntil: k.disabledUntil,

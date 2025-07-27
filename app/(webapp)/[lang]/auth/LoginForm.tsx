@@ -1,6 +1,6 @@
 "use client";
 
-import { login } from "@/app/auth/actions";
+import { login } from "@/webapp/auth/actions";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Dictionary } from "@/lib/i18n/dictionaries";
 import Link from "next/link";

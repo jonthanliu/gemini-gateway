@@ -1,7 +1,8 @@
-import { geminiClient } from "@/lib/core/gemini_client";
-import logger from "@/lib/logger";
 import { convertAnthropicToGemini } from "@/lib/adapters/anthropic-to-gemini";
 import { streamGeminiToAnthropic } from "@/lib/adapters/gemini-to-anthropic";
+import { geminiClient } from "@/lib/core/gemini_client";
+import logger from "@/lib/logger";
+import { streamToAsyncIterable } from "@/lib/stream-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -18,7 +19,10 @@ export async function POST(req: NextRequest) {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      logger.error({ status: geminiResponse.status, errorBody }, "[Anthropic Bridge] Gemini API returned an error");
+      logger.error(
+        { status: geminiResponse.status, errorBody },
+        "[Anthropic Bridge] Gemini API returned an error"
+      );
       return new NextResponse(errorBody, {
         status: geminiResponse.status,
         headers: { "Content-Type": "application/json" },
@@ -29,7 +33,8 @@ export async function POST(req: NextRequest) {
       throw new Error("Stream response from Gemini is empty.");
     }
 
-    const anthropicStream = streamGeminiToAnthropic(geminiResponse.body);
+    const adaptedStream = streamToAsyncIterable(geminiResponse.body);
+    const anthropicStream = streamGeminiToAnthropic(adaptedStream);
 
     return new NextResponse(anthropicStream, {
       status: 200,
@@ -40,10 +45,10 @@ export async function POST(req: NextRequest) {
         "anthropic-version": "2023-06-01",
       },
     });
-
   } catch (error) {
     logger.error(error, "[Anthropic Bridge] Unhandled error");
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred.";
     return NextResponse.json(
       {
         type: "error",

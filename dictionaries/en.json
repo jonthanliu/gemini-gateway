@@ -150,6 +150,7 @@
             "key": "Key",
             "status": "Status",
             "failCount": "Failure Count",
+"disabledUntil": "Disabled Until",
             "totalCalls": "Total Calls",
             "last1m": "1m",
             "last1h": "1h",

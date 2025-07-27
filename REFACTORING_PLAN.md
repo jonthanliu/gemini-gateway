@@ -11,13 +11,13 @@
 
 - **优先级:** **最高 (Highest)** - 必须首先完成
 
-- [ ] **任务 Z1: 移除 `src` 目录**
-    - [ ] **Z1.1:** 将 `src` 目录下的所有内容 (`app`, `lib`, `components`, `middleware.ts` 等) 移动到项目根目录。
-    - [ ] **Z1.2:** 修改 `tsconfig.json`，将 `compilerOptions.paths` 中的别名 `@/*` 的路径从 `"./src/*"` 更新为 `"./*"` (如果使用 `baseUrl`，则相应调整)。
-    - [ ] **Z1.3:** 修改 `tailwind.config.mjs`，更新 `content` 字段中的所有路径，移除 `src/` 前缀。
-    - [ ] **Z1.4:** 检查其他配置文件 (如 `eslint.config.mjs`)，确保没有硬编码的 `src/` 路径。
-    - [ ] **Z1.5:** 运行 `pnpm lint --fix` 和 `pnpm build` 以验证所有路径引用都已更正，并修复潜在问题。
-    - [ ] **Z1.6:** 删除空的 `src` 目录。
+- [x] **任务 Z1: 移除 `src` 目录**
+    - [x] **Z1.1:** 将 `src` 目录下的所有内容 (`app`, `lib`, `components`, `middleware.ts` 等) 移动到项目根目录。
+    - [x] **Z1.2:** 修改 `tsconfig.json`，将 `compilerOptions.paths` 中的别名 `@/*` 的路径从 `"./src/*"` 更新为 `"./*"` (如果使用 `baseUrl`，则相应调整)。
+    - [x] **Z1.3:** 修改 `tailwind.config.mjs`，更新 `content` 字段中的所有路径，移除 `src/` 前缀。
+    - [x] **Z1.4:** 检查其他配置文件 (如 `eslint.config.mjs`)，确保没有硬编码的 `src/` 路径。
+    - [x] **Z1.5:** 运行 `pnpm lint --fix` 和 `pnpm build` 以验证所有路径引用都已更正，并修复潜在问题。
+    - [x] **Z1.6:** 删除空的 `src` 目录。
 
 ---
 
@@ -27,17 +27,17 @@
 
 - **优先级:** **关键 (Critical)**
 
-- [ ] **任务 A1: 修复认证配置漏洞**
-    - [ ] **A1.1:** 更新 `.env.example` 文件，加入 `AUTH_TOKEN` 和 `ALLOWED_TOKENS` 两个必需的配置项，并附上清晰的注释说明。
-    - [ ] **A1.2:** 在应用启动逻辑中（建议在根 `layout.tsx` 的服务器端部分）加入强制检查，如果 `AUTH_TOKEN` 未设置，则抛出错误并阻止应用启动。
-    - [ ] **A1.3:** 移除所有“首次登录设置密码”的相关前端和后端逻辑。
+- [x] **任务 A1: 修复认证配置漏洞**
+    - [x] **A1.1:** 更新 `.env.example` 文件，加入 `AUTH_TOKEN` 和 `ALLOWED_TOKENS` 两个必需的配置项，并附上清晰的注释说明。
+    - [x] **A1.2:** 在应用启动逻辑中（建议在根 `layout.tsx` 的服务器端部分）加入强制检查，如果 `AUTH_TOKEN` 未设置，则抛出错误并阻止应用启动。
+    - [x] **A1.3:** 移除所有“首次登录设置密码”的相关前端和后端逻辑。
 
-- [ ] **任务 A2: 强化中间件安全**
-    - [ ] **A2.1:** 修改 `middleware.ts` 中的 `matcher`，使其默认拦截所有未经明确排除的请求。
-    - [ ] **A2.2:** 重写中间件逻辑，采用“白名单”模式，明确定义公共路径、API 路径和受保护的前端路径，并对它们应用各自的认证策略。
+- [x] **任务 A2: 强化中间件安全**
+    - [x] **A2.1:** 修改 `middleware.ts` 中的 `matcher`，使其默认拦截所有未经明确排除的请求。
+    - [x] **A2.2:** 重写中间件逻辑，采用“白名单”模式，明确定义公共路径、API 路径和受保护的前端路径，并对它们应用各自的认证策略。
 
-- [ ] **任务 A3: 清理生产依赖**
-    - [ ] **A3.1:** 将 `drizzle-kit` 从 `package.json` 的 `dependencies` 移动到 `devDependencies`。
+- [x] **任务 A3: 清理生产依赖**
+    - [x] **A3.1:** 将 `drizzle-kit` 从 `package.json` 的 `dependencies` 移动到 `devDependencies`。
 
 ---
 
@@ -47,22 +47,22 @@
 
 - **优先级:** **高 (High)**
 
-- [ ] **任务 B1: 重构密钥管理 (Key Management)**
-    - [ ] **B1.1:** 修改数据库 `schema.ts`，从 `apiKeys` 表中删除 `failCount` 字段，增加 `disabledUntil` (DateTime) 字段。
-    - [ ] **B1.2:** 生成并应用新的数据库迁移。
-    - [ ] **B1.3:** 在 `key.service.ts` (或重命名为 `key_manager.ts`) 中，重写 `getNextWorkingKey` 以使用 `disabledUntil` 进行查询。
-    - [ ] **B1.4:** 重写 `handleApiFailure`，使其在失败时设置 `disabledUntil`，而不是增加计数器。
-    - [ ] **B1.5:** 删除不再需要的 `checkAndReactivateKeys` 函数及其相关的所有调用（包括 CRON 任务）。
+- [x] **任务 B1: 重构密钥管理 (Key Management)**
+    - [x] **B1.1:** 修改数据库 `schema.ts`，从 `apiKeys` 表中删除 `failCount` 字段，增加 `disabledUntil` (DateTime) 字段。
+    - [x] **B1.2:** 生成并应用新的数据库迁移。
+    - [x] **B1.3:** 在 `key.service.ts` (或重命名为 `key_manager.ts`) 中，重写 `getNextWorkingKey` 以使用 `disabledUntil` 进行查询。
+    - [x] **B1.4:** 重写 `handleApiFailure`，使其在失败时设置 `disabledUntil`，而不是增加计数器。
+    - [x] **B1.5:** 删除不再需要的 `checkAndReactivateKeys` 函数及其相关的所有调用（包括 CRON 任务）。
 
-- [ ] **任务 B2: 建立清晰的适配器与核心层**
-    - [ ] **B2.1:** 创建 `(adapters)` 目录，并将 `transforms` 中的所有转换逻辑移动至此，按协议（如 `openai.adapter.ts`）重新组织。
-    - [ ] **B2.2:** 创建 `(core)` 目录，用于存放新的核心逻辑。
-    - [ ] **B2.3:** 在 `(core)` 中创建 `gemini_client.ts`，封装所有对 Gemini API 的 `fetch` 调用、重试逻辑，并集成新的密钥管理器（任务 B1 的产物）。
+- [x] **任务 B2: 建立清晰的适配器与核心层**
+    - [x] **B2.1:** 创建 `(adapters)` 目录，并将 `transforms` 中的所有转换逻辑移动至此，按协议（如 `openai.adapter.ts`）重新组织。
+    - [x] **B2.2:** 创建 `(core)` 目录，用于存放新的核心逻辑。
+    - [x] **B2.3:** 在 `(core)` 中创建 `gemini_client.ts`，封装所有对 Gemini API 的 `fetch` 调用、重试逻辑，并集成新的密钥管理器（任务 B1 的产物）。
 
-- [ ] **任务 B3: 重构 API 路由**
-    - [ ] **B3.1:** 逐一重构 `/openai`、`/anthropic` 下的所有 API 路由。
-    - [ ] **B3.2:** 在路由中，严格遵循 `认证 -> 请求适配 -> 调用核心客户端 -> 响应适配 -> 返回` 的处理流程。
-    - [ ] **B3.3:** 确保所有路由都不再直接处理 `fetch`、重试或密钥选择，这些都应由 `gemini_client.ts` 负责。
+- [x] **任务 B3: 重构 API 路由**
+    - [x] **B3.1:** 逐一重构 `/openai`、`/anthropic` 下的所有 API 路由。
+    - [x] **B3.2:** 在路由中，严格遵循 `认证 -> 请求适配 -> 调用核心客户端 -> 响应适配 -> 返回` 的处理流程。
+    - [x] **B3.3:** 确保所有路由都不再直接处理 `fetch`、重试或密钥选择，这些都应由 `gemini_client.ts` 负责。
 
 ---
 
@@ -72,11 +72,11 @@
 
 - **优先级:** **中 (Medium)**
 
-- [ ] **任务 C1: 调整项目目录结构 (采用路由组)**
-    - [ ] **C1.1:** 在 `app` 目录下创建 `(api)` 和 `(webapp)` 两个路由组文件夹。
-    - [ ] **C1.2:** 将所有 API 相关的路由（`openai`, `anthropic`, `gemini` 等）移动到 `app/(api)` 目录下。
-    - [ ] **C1.3:** 将所有面向用户的前端页面（`[lang]` 目录等）移动到 `app/(webapp)` 目录下。
-    - [ ] **C1.4:** 审查并调整根 `layout.tsx` 和 `(webapp)/layout.tsx`，确保 API 路由不会被不必要的前端布局包裹。
+- [x] **任务 C1: 调整项目目录结构 (采用路由组)**
+    - [x] **C1.1:** 在 `app` 目录下创建 `(api)` 和 `(webapp)` 两个路由组文件夹。
+    - [x] **C1.2:** 将所有 API 相关的路由（`openai`, `anthropic`, `gemini` 等）移动到 `app/(api)` 目录下。
+    - [x] **C1.3:** 将所有面向用户的前端页面（`[lang]` 目录等）移动到 `app/(webapp)` 目录下。
+    - [x] **C1.4:** 审查并调整根 `layout.tsx` 和 `(webapp)/layout.tsx`，确保 API 路由不会被不必要的前端布局包裹。
 
 - [ ] **任务 C2: 彻底简化 Docker 部署**
     - [ ] **C2.1:** 整理 `docker-compose.yml`，统一数据库路径和卷挂载，并使用 `env_file` 来加载 `.env`。

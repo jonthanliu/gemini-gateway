@@ -1,4 +1,4 @@
-import LoginForm from "@/app/[lang]/auth/LoginForm";
+import LoginForm from "../auth/LoginForm";
 import { Locale } from "@/i18n-config";
 import { getSettings } from "@/lib/config/settings";
 import { verifyToken } from "@/lib/crypto";

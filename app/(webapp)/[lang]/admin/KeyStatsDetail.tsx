@@ -16,7 +16,6 @@ import { getDetailedKeyStats } from "./actions";
 type ApiKeyDetail = {
   key: string;
   enabled: boolean;
-  failCount: number;
   createdAt: Date | null;
   lastUsed: Date | null;
 };
@@ -51,7 +50,6 @@ export function KeyStatsDetail({
         <TableHeader>
           <TableRow>
             <TableHead>{dictionary.keyEnd}</TableHead>
-            <TableHead>{dictionary.failCount}</TableHead>
             <TableHead>{dictionary.lastUsed}</TableHead>
           </TableRow>
         </TableHeader>
@@ -66,7 +64,6 @@ export function KeyStatsDetail({
             keys.map((key) => (
               <TableRow key={key.key}>
                 <TableCell>...{key.key.slice(-4)}</TableCell>
-                <TableCell>{key.failCount}</TableCell>
                 <TableCell>
                   {key.lastUsed?.toLocaleString() ?? dictionary.never}
                 </TableCell>

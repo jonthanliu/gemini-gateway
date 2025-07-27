@@ -1,6 +1,6 @@
 "use client";
 
-import { logout } from "@/app/auth/actions";
+import { logout } from "@/webapp/auth/actions";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";

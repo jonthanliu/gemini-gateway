@@ -41,6 +41,7 @@
         "invalid": "无效",
         "keyEnd": "密钥",
         "failCount": "失败次数",
+        "disabledUntil": "禁用至",
         "lastUsed": "最后使用",
         "noKeys": "该类别下没有密钥。",
         "never": "从未使用"
@@ -150,6 +151,7 @@
             "key": "密钥",
             "status": "状态",
             "failCount": "失败次数",
+            "disabledUntil": "禁用至",
             "totalCalls": "总调用",
             "last1m": "1分钟",
             "last1h": "1小时",

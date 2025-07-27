@@ -1,13 +1,13 @@
-import { geminiClient } from "@/lib/core/gemini_client";
-import logger from "@/lib/logger";
 import {
   streamGeminiToOpenAI,
   transformGeminiResponseToOpenAI,
   transformOpenAIRequestToGemini,
 } from "@/lib/adapters/openai-to-gemini";
+import { geminiClient } from "@/lib/core/gemini_client";
+import logger from "@/lib/logger";
+import { iteratorToStream, streamToAsyncIterable } from "@/lib/stream-utils";
 import { NextRequest, NextResponse } from "next/server";
 
-// This is the new, simplified POST handler
 export async function POST(req: NextRequest) {
   try {
     const openaiRequest = await req.json();
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       "gpt-4o": "gemini-1.5-pro",
     };
     const requestedOpenAIModel = openaiRequest.model || "gpt-3.5-turbo";
-    const geminiModelName = modelMap[requestedOpenAIModel] || "gemini-1.5-flash";
+    const geminiModelName =
+      modelMap[requestedOpenAIModel] || "gemini-1.5-flash";
 
     const geminiRequest = transformOpenAIRequestToGemini(openaiRequest);
 
@@ -31,7 +32,10 @@ export async function POST(req: NextRequest) {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      logger.error({ status: geminiResponse.status, errorBody }, "[OpenAI Bridge] Gemini API returned an error");
+      logger.error(
+        { status: geminiResponse.status, errorBody },
+        "[OpenAI Bridge] Gemini API returned an error"
+      );
       return new NextResponse(errorBody, {
         status: geminiResponse.status,
         headers: { "Content-Type": "application/json" },
@@ -42,8 +46,14 @@ export async function POST(req: NextRequest) {
       if (!geminiResponse.body) {
         throw new Error("Stream response from Gemini is empty.");
       }
-      const stream = await streamGeminiToOpenAI(geminiResponse.body, geminiModelName);
-      return new NextResponse(stream, {
+      const adaptedStream = streamToAsyncIterable(geminiResponse.body);
+      const openaiStream = await streamGeminiToOpenAI(
+        adaptedStream,
+        geminiModelName
+      );
+      const readableStream = iteratorToStream(openaiStream);
+
+      return new NextResponse(readableStream, {
         status: 200,
         headers: {
           "Content-Type": "text/event-stream; charset=utf-8",
@@ -53,13 +63,16 @@ export async function POST(req: NextRequest) {
       });
     } else {
       const geminiJson = await geminiResponse.json();
-      const openaiResponse = transformGeminiResponseToOpenAI(geminiJson, geminiModelName);
+      const openaiResponse = transformGeminiResponseToOpenAI(
+        geminiJson,
+        geminiModelName
+      );
       return NextResponse.json(openaiResponse, { status: 200 });
     }
-
   } catch (error) {
     logger.error(error, "[OpenAI Bridge] Unhandled error");
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred.";
     return NextResponse.json(
       {
         error: {

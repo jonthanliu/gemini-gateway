@@ -3,7 +3,7 @@ import logger from "@/lib/logger";
 import {
   getNextWorkingKey,
   handleApiFailure,
-  resetKeyFailureCount,
+  resetKeyStatus,
 } from "@/lib/services/key.service";
 import { logError, logRequest } from "@/lib/services/logging.service";
 
@@ -24,7 +24,7 @@ export async function retryWithExponentialBackoff<T>(
       const result = await fn(apiKey);
       const latency = Date.now() - startTime;
       await logRequest(apiKey, model, 200, true, latency);
-      await resetKeyFailureCount(apiKey);
+      await resetKeyStatus(apiKey);
       return result;
     } catch (error) {
       const latency = Date.now() - startTime;

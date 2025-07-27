@@ -29,7 +29,7 @@ import { formatApiKey } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { deleteApiKeys, resetKeysFailures, verifyApiKeys } from "./actions";
+import { deleteApiKeys, resetKeysStatus } from "./actions";
 import { KeyUsageDetail } from "./KeyUsageDetail";
 
 export type Key = Awaited<ReturnType<typeof getAllKeys>>[number];
@@ -74,34 +74,13 @@ export function KeyTable({
 
   const handleReset = (key: string) => {
     startTransition(async () => {
-      const result = await resetKeysFailures([key]);
+      const result = await resetKeysStatus([key]);
       if (result.error) toast.error(`${dictionary.error}: ${result.error}`);
       else toast.success(result.success);
     });
   };
 
-  const handleVerify = (key: string) => {
-    startTransition(async () => {
-      const result = await verifyApiKeys([key]);
-      if (result.error) {
-        toast.error(`${dictionary.error}: ${result.error}`);
-      } else {
-        const keyResult = result.results?.[0];
-        if (keyResult) {
-          const status = keyResult.success
-            ? dictionary.active
-            : dictionary.inactive;
-          const message = dictionary.success.verificationResult
-            .replace("{key}", formatApiKey(keyResult.key))
-            .replace("{status}", status);
-          toast.success(message);
-        } else if (result.success) {
-          toast.success(result.success);
-        }
-      }
-    });
-  };
-
+  
   const areAllSelected =
     keys.length > 0 && keys.every((k) => selectedKeys.has(k.key));
 
@@ -140,7 +119,7 @@ export function KeyTable({
             </TableHead>
             <TableHead>{dictionary.key}</TableHead>
             <TableHead>{dictionary.status}</TableHead>
-            <TableHead>{dictionary.failCount}</TableHead>
+            <TableHead>{dictionary.disabledUntil}</TableHead>
             <TableHead>{dictionary.totalCalls}</TableHead>
             <TableHead>{dictionary.last1m}</TableHead>
             <TableHead>{dictionary.last1h}</TableHead>
@@ -179,7 +158,7 @@ export function KeyTable({
                   {key.isWorking ? dictionary.active : dictionary.inactive}
                 </span>
               </TableCell>
-              <TableCell>{key.failCount}</TableCell>
+              <TableCell>{key.disabledUntil ? new Date(key.disabledUntil).toLocaleString() : dictionary.notApplicable}</TableCell>
               <TableCell>{key.totalRequests}</TableCell>
               <TableCell>...</TableCell>
               <TableCell>...</TableCell>
@@ -202,12 +181,6 @@ export function KeyTable({
                       {dictionary.viewDetails}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => handleVerify(key.key)}
-                      disabled={isPending}
-                    >
-                      {dictionary.verify}
-                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleReset(key.key)}
                       disabled={isPending}

@@ -9,10 +9,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dictionary } from "@/lib/i18n/dictionaries";
-import { ClipboardCheck, RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { deleteApiKeys, resetKeysFailures, verifyApiKeys } from "./actions";
+import { deleteApiKeys, resetKeysStatus } from "./actions";
 import { Key, KeyTable } from "./KeyTable";
 
 interface KeyListProps {
@@ -28,16 +28,12 @@ type ActionResult = {
 
 export function KeyList({ keys, dictionary }: KeyListProps) {
   const [isPending, startTransition] = useTransition();
-  const [failCountFilter, setFailCountFilter] = useState("");
   const [keyFragmentFilter, setKeyFragmentFilter] = useState("");
   const [selectedKeys, setSelectedKeys] = useState(new Set<string>());
 
   const workingKeys = keys.filter((k) => {
     if (!k.isWorking) return false;
-    if (failCountFilter && k.failCount < parseInt(failCountFilter, 10)) {
-      return false;
-    }
-    if (keyFragmentFilter && !k.key.includes(keyFragmentFilter)) {
+        if (keyFragmentFilter && !k.key.includes(keyFragmentFilter)) {
       return false;
     }
     return true;
@@ -113,16 +109,7 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => handleBulkAction(verifyApiKeys)}
-          disabled={isPending}
-        >
-          <ClipboardCheck className="mr-2 h-4 w-4" />
-          {dictionary.bulkVerify}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handleBulkAction(resetKeysFailures)}
+          onClick={() => handleBulkAction(resetKeysStatus)}
           disabled={isPending}
         >
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -170,13 +157,6 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
                 placeholder={dictionary.searchPlaceholder}
                 value={keyFragmentFilter}
                 onChange={(e) => setKeyFragmentFilter(e.target.value)}
-                className="max-w-xs"
-              />
-              <Input
-                type="number"
-                placeholder={dictionary.minFailCountPlaceholder}
-                value={failCountFilter}
-                onChange={(e) => setFailCountFilter(e.target.value)}
                 className="max-w-xs"
               />
             </div>

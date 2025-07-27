@@ -15,7 +15,7 @@ import {
 } from "@/lib/db/schema";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getLocale } from "@/lib/i18n/get-locale";
-import { resetKeyFailureCount, verifyKey } from "@/lib/services/key.service";
+import { resetKeyStatus } from "@/lib/services/key.service";
 import {
   and,
   count,
@@ -120,7 +120,7 @@ export async function deleteApiKeys(keys: string[]) {
   }
 }
 
-export async function resetKeysFailures(keys: string[]) {
+export async function resetKeysStatus(keys: string[]) {
   const locale = await getLocale();
   const dictionary = await getDictionary(locale);
   const t = dictionary.keys.table;
@@ -129,7 +129,7 @@ export async function resetKeysFailures(keys: string[]) {
     return { error: t.error.noKeysForReset };
   }
   try {
-    await Promise.all(keys.map((key) => resetKeyFailureCount(key)));
+    await Promise.all(keys.map((key) => resetKeyStatus(key)));
     revalidatePath("/admin");
     return {
       success: t.success.reset.replace("{count}", keys.length.toString()),
@@ -139,27 +139,6 @@ export async function resetKeysFailures(keys: string[]) {
   }
 }
 
-export async function verifyApiKeys(keys: string[]) {
-  const locale = await getLocale();
-  const dictionary = await getDictionary(locale);
-  const t = dictionary.keys.table;
-
-  if (!keys || keys.length === 0) {
-    return { error: t.error.noKeysForVerification };
-  }
-  try {
-    const results = await Promise.all(
-      keys.map(async (key) => {
-        const success = await verifyKey(key);
-        return { key, success };
-      })
-    );
-    revalidatePath("/admin");
-    return { success: t.success.verificationCompleted, results };
-  } catch {
-    return { error: t.error.failedToVerify };
-  }
-}
 
 export async function getKeyUsageDetails(apiKey: string) {
   const locale = await getLocale();
@@ -358,7 +337,6 @@ export async function getDetailedKeyStats() {
       .select({
         key: apiKeys.key,
         enabled: apiKeys.enabled,
-        failCount: apiKeys.failCount,
         createdAt: apiKeys.createdAt,
         lastUsed: apiKeys.lastUsed,
       })

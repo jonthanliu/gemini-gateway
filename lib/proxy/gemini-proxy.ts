@@ -7,7 +7,6 @@ import logger from "@/lib/logger";
 import {
   getNextWorkingKey,
   handleApiFailure,
-  resetKeyFailureCount,
 } from "@/lib/services/key.service";
 import { logError, logRequest } from "@/lib/services/logging.service";
 import { Agent } from "http";
@@ -279,7 +278,7 @@ export async function proxyRequest(request: NextRequest, pathPrefix: string) {
         const t = Date.now();
         try {
           if (isSuccess) {
-            await resetKeyFailureCount(apiKey);
+            await handleApiFailure(apiKey);
           } else {
             await handleApiFailure(apiKey);
           }
