@@ -46,6 +46,6 @@ export const apiKeys = sqliteTable("ApiKey", {
   lastUsed: integer("lastUsed", { mode: "timestamp" }),
   lastChecked: integer("lastChecked", { mode: "timestamp" }),
   lastFailedAt: integer("lastFailedAt", { mode: "timestamp" }),
-  failCount: integer("failCount").default(0).notNull(),
+  disabledUntil: integer("disabledUntil", { mode: "timestamp" }),
   enabled: integer("enabled", { mode: "boolean" }).default(true).notNull(),
 });

@@ -1,0 +1,1 @@
+ALTER TABLE `ApiKey` DROP COLUMN `failCount`;

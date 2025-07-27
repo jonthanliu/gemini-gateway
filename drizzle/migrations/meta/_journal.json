@@ -8,6 +8,20 @@
       "when": 1753494531632,
       "tag": "0000_silent_silver_surfer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1753575756127,
+      "tag": "0001_narrow_proteus",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1753575825239,
+      "tag": "0002_exotic_living_lightning",
+      "breakpoints": true
     }
   ]
 }
