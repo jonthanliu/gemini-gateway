@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
-import { and, count, desc, eq, isNull, lte, max, sql, or } from "drizzle-orm";
+import { and, count, desc, eq, isNull, lte, max, or, sql } from "drizzle-orm";
 
 const KEY_COOLDOWN_PERIOD_SECONDS = 5 * 60; // 5 minutes
 
@@ -48,7 +48,9 @@ export async function getNextWorkingKey(): Promise<string> {
  */
 export async function handleApiFailure(key: string): Promise<void> {
   const now = new Date();
-  const disabledUntil = new Date(now.getTime() + KEY_COOLDOWN_PERIOD_SECONDS * 1000);
+  const disabledUntil = new Date(
+    now.getTime() + KEY_COOLDOWN_PERIOD_SECONDS * 1000
+  );
 
   try {
     await db
@@ -61,7 +63,10 @@ export async function handleApiFailure(key: string): Promise<void> {
       .where(eq(apiKeys.key, key));
 
     logger.warn(
-      { key: `...${key.slice(-4)}`, disabledUntil: disabledUntil.toISOString() },
+      {
+        key: `...${key.slice(-4)}`,
+        disabledUntil: disabledUntil.toISOString(),
+      },
       "Cooldown initiated for failing API key."
     );
   } catch (error) {
@@ -141,7 +146,9 @@ export async function getAllKeys() {
 
   return keysWithStats.map((k) => ({
     ...k,
-    isWorking: k.enabled && (!k.disabledUntil || k.disabledUntil.getTime() <= now.getTime()),
+    isWorking:
+      k.enabled &&
+      (!k.disabledUntil || k.disabledUntil.getTime() <= now.getTime()),
     failedRequests: k.totalRequests - k.successfulRequests,
     lastUsed: k.lastUsed ? new Date(k.lastUsed) : null,
     disabledUntil: k.disabledUntil,
@@ -163,5 +170,40 @@ export async function hasApiKeys(): Promise<boolean> {
     // In case of a database error, we should probably assume no keys exist
     // to avoid locking users out of the onboarding process.
     return false;
+  }
+}
+
+/**
+ * Adds multiple API keys to the database.
+ *
+ * @param {string[]} keys - An array of API key strings to add.
+ * @returns {Promise<any[]>} The newly inserted key records.
+ * @throws {Error} If the keys array is empty or if insertion fails.
+ */
+export async function addApiKeys(keys: string[]) {
+  if (!keys || keys.length === 0) {
+    throw new Error("No keys provided to add.");
+  }
+
+  const newKeys = keys.map((key) => ({
+    key,
+    enabled: true,
+  }));
+
+  try {
+    const result = await db.insert(apiKeys).values(newKeys).returning();
+    logger.info({ count: result.length }, "Successfully added new API keys.");
+    return result;
+  } catch (error) {
+    logger.error({ error }, "Failed to add new API keys.");
+    if (
+      error instanceof Error &&
+      error.message.includes("UNIQUE constraint failed")
+    ) {
+      throw new Error(
+        "One or more keys already exist. Please provide unique keys."
+      );
+    }
+    throw new Error("An unexpected error occurred while adding keys.");
   }
 }

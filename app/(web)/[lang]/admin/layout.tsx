@@ -9,23 +9,18 @@
 // separation of concerns between layout and page-level content.
 
 import { checkAuthState } from "@/lib/auth/web_auth";
-
-// A placeholder for the header component, to be implemented later.
-function Header() {
-  return (
-    <header className="bg-gray-800 text-white p-4">
-      <h1 className="text-xl">Admin Dashboard V2</h1>
-    </header>
-  );
-}
+import { Topbar } from "./components/Topbar";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { Locale } from "@/i18n-config";
 
 export default async function AdminLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: { lang: Locale };
 }) {
   // 1. Critical configuration check.
-  // If the master token is not set, the application cannot run securely.
   if (!process.env.AUTH_TOKEN) {
     throw new Error(
       "FATAL: AUTH_TOKEN is not configured. The application cannot start securely."
@@ -33,18 +28,22 @@ export default async function AdminLayout({
   }
 
   // 2. Check user authentication status.
+  const { lang } = await params;
   const isLoggedIn = await checkAuthState();
+  const dictionary = await getDictionary(lang);
 
   // 3. Conditionally render the layout.
-  // If the user is logged in, provide the full dashboard layout with a header.
-  // Otherwise, render the children directly, which will be the login page.
   return (
     <div>
       {isLoggedIn ? (
-        <>
-          <Header />
-          <main className="p-4">{children}</main>
-        </>
+        <div className="flex min-h-screen w-full flex-col">
+          <Topbar dictionary={dictionary.admin} />
+          <main className="flex flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
+            <div className="mx-auto grid w-full max-w-6xl items-start gap-6">
+              <div className="grid gap-6">{children}</div>
+            </div>
+          </main>
+        </div>
       ) : (
         <>{children}</>
       )}
