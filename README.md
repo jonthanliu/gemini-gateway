@@ -29,39 +29,39 @@ An intelligent AI gateway that supercharges your applications by providing a uni
 
 ### Self-Hosting with Docker (Recommended)
 
-Deploying with Docker is the easiest way to get your Gemini Gateway up and running.
-
 1.  **Clone the repository:**
-
     ```bash
     git clone https://github.com/jonthanliu/gemini-gateway.git
     cd gemini-gateway
     ```
 
 2.  **Configure your environment:**
-    Create a `.env` file and add the following:
-
+    Copy the example environment file and edit it with your settings.
+    ```bash
+    cp .env.example .env
+    ```
+    Now, edit the `.env` file:
     ```env
-    # Path for the production database inside the container
-    DATABASE_URL="file:/app/data/prod.db"
+    # --- Security (Mandatory) ---
+    # Set a strong, random password here for the admin panel.
+    AUTH_TOKEN="your_super_secret_admin_token"
 
-    # (Optional) A secure secret for the cron job endpoint
-    CRON_SECRET="a-very-secure-random-string"
+    # A comma-separated list of tokens your clients will use.
+    ALLOWED_TOKENS="client_token_1,client_token_2"
+
+    # --- Database (Do not change for Docker) ---
+    DATABASE_URL="file:/app/data/prod.db"
     ```
 
 3.  **Run with Docker Compose:**
-
-    It's recommended to mount a volume for persistent storage to preserve the database. The volume should be mounted at `/app/data`.
-
     ```bash
     docker-compose up --build -d
     ```
 
-4.  **First-Time Setup:**
+4.  **Access the Admin Panel:**
     - Open your browser and navigate to `http://YOUR_SERVER_IP:3000/admin`.
-    - You'll be prompted for a password. **Enter a new, strong password** to secure the admin dashboard. This will become your permanent admin password.
+    - Log in using the `AUTH_TOKEN` you set in the `.env` file.
     - Go to the **Keys** tab and add your Gemini API keys.
-    - Go to the **Configuration** tab and add "Allowed API Tokens". These are the tokens your client applications will use to authenticate. **It is strongly recommended to set allowed tokens on first run, otherwise the API will be open to public use, which may lead to excessive Gemini traffic consumption.**
 
 Your gateway is now live and ready to serve requests!
 
@@ -111,7 +111,7 @@ For general-purpose clients like LobeChat or ChatGPT-Next-Web, you can use the O
 
 ## ⚠️ Important Notes & Disclaimer
 
-- **Password Recovery**: If you forget your admin password, you can log into the Docker host server and reset it. The simplest method is to delete the database file and redeploy the container. For advanced users, you can delete the `auth_token` entry from the `Setting` table in the database, then log in to the admin dashboard to set a new password.
+- **Password Recovery**: If you forget your admin password, you can edit the `AUTH_TOKEN` in your `.env` file and restart the container.
 - **AI-Generated Code**: This project was primarily developed by an AI assistant. While it is functional, it may contain unexpected behaviors.
 - **Use at Your Own Risk**: This is an open-source project provided "as is". The authors and contributors are not responsible for any damages or losses resulting from its use, including but not to API key leakage or financial loss. Please review the code and security configurations carefully before deploying in a production environment.
 - **Contributions Welcome**: We welcome pull requests! Please note that contributions will also be reviewed by an AI.

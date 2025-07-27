@@ -78,11 +78,11 @@
     - [x] **C1.3:** 将所有面向用户的前端页面（`[lang]` 目录等）移动到 `app/(webapp)` 目录下。
     - [x] **C1.4:** 审查并调整根 `layout.tsx` 和 `(webapp)/layout.tsx`，确保 API 路由不会被不必要的前端布局包裹。
 
-- [ ] **任务 C2: 彻底简化 Docker 部署**
-    - [ ] **C2.1:** 整理 `docker-compose.yml`，统一数据库路径和卷挂载，并使用 `env_file` 来加载 `.env`。
-    - [ ] **C2.2:** 修正 `Dockerfile` 中的 `CMD` 指令，使其正确指向 `scripts/run.sh`。
-    - [ ] **C2.3:** 确保 `run.sh` 脚本被赋予可执行权限 (`chmod +x`)。
-    - [ ] **C2.4:** 更新 `README.md`，提供清晰、简单、 foolproof 的 Docker 启动指令。
+- [x] **任务 C2: 彻底简化 Docker 部署**
+    - [x] **C2.1:** 整理 `docker-compose.yml`，统一数据库路径和卷挂载，并使用 `env_file` 来加载 `.env`。
+    - [x] **C2.2:** 修正 `Dockerfile` 中的 `CMD` 指令，使其正确指向 `scripts/run.sh`。
+    - [x] **C2.3:** 确保 `run.sh` 脚本被赋予可执行权限 (`chmod +x`)。
+    - [x] **C2.4:** 更新 `README.md`，提供清晰、简单、 foolproof 的 Docker 启动指令。
 
 ---
 
