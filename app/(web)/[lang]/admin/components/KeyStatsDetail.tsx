@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -13,7 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatApiKey } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { getDetailedKeyStatsAction, DetailedKeyStats } from "../actions/key.action";
+import {
+  DetailedKeyStats,
+  getDetailedKeyStatsAction,
+} from "../actions/key.action";
 
 type KeyStatsDetailDictionary = Dictionary["admin"]["keys"]["table"] &
   Pick<Dictionary["admin"]["dashboard"], "activeKeys" | "inactiveKeys">;
@@ -54,7 +56,7 @@ export function KeyStatsDetail({ dictionary }: KeyStatsDetailProps) {
         <TableHeader>
           <TableRow>
             <TableHead>{dictionary.key}</TableHead>
-            <TableHead>{dictionary.lastUsedAt}</TableHead>
+            <TableHead>{dictionary.lastFailedAt}</TableHead>
             <TableHead>Created At</TableHead> {/* Fallback */}
           </TableRow>
         </TableHeader>
@@ -87,10 +89,16 @@ export function KeyStatsDetail({ dictionary }: KeyStatsDetailProps) {
     <Tabs defaultValue="active">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="active">
-          {dictionary.activeKeys.replace("{count}", activeKeys.length.toString())}
+          {dictionary.activeKeys.replace(
+            "{count}",
+            activeKeys.length.toString()
+          )}
         </TabsTrigger>
         <TabsTrigger value="inactive">
-          {dictionary.inactiveKeys.replace("{count}", inactiveKeys.length.toString())}
+          {dictionary.inactiveKeys.replace(
+            "{count}",
+            inactiveKeys.length.toString()
+          )}
         </TabsTrigger>
       </TabsList>
       <TabsContent value="active">{renderKeyTable(activeKeys)}</TabsContent>

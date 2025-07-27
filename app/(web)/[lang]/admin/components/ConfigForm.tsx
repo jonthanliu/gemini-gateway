@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -94,7 +93,7 @@ export function ConfigForm({ settings, dictionary }: ConfigFormProps) {
               {dictionary.allowedTokens.label}
             </Label>
             <DynamicListInput
-              value={formData.ALLOWED_TOKENS}
+              value={formData.ALLOWED_TOKENS?.split(",") ?? []}
               onChange={(newValue) =>
                 handleDynamicListChange("ALLOWED_TOKENS", newValue)
               }

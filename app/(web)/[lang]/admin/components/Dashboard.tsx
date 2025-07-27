@@ -1,4 +1,3 @@
-
 // Architectural Decision:
 // The Dashboard component is an ASYNC SERVER COMPONENT. This is a deliberate choice to co-locate
 // data fetching with the component that uses the data. It fetches all necessary dashboard data
@@ -50,11 +49,7 @@ export async function Dashboard({ dictionary }: DashboardProps) {
       <DashboardStats
         keyStats={keyStats}
         systemStats={systemStats}
-        dictionary={{
-          ...dictionary.dashboard,
-          ...dictionary.keys.table,
-          ...dictionary.keys.table.usage
-        }}
+        dictionary={dictionary}
       />
 
       {/* Card container for the API key list and actions */}

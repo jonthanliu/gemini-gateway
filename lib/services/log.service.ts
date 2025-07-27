@@ -1,4 +1,3 @@
-
 "use server";
 
 import { db } from "@/lib/db";
@@ -7,7 +6,7 @@ import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 
 type LogType = "request" | "error";
 
-interface LogFilters {
+export interface LogFilters {
   logType: LogType;
   page?: number;
   limit?: number;
@@ -37,8 +36,7 @@ export async function getLogs(filters: LogFilters) {
       conditions.push(eq(requestLogs.statusCode, parseInt(errorCode, 10)));
     if (startDate)
       conditions.push(gte(requestLogs.createdAt, new Date(startDate)));
-    if (endDate)
-      conditions.push(lte(requestLogs.createdAt, new Date(endDate)));
+    if (endDate) conditions.push(lte(requestLogs.createdAt, new Date(endDate)));
 
     const where = and(...conditions);
     const totalResult = await db

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -55,9 +54,12 @@ export function LogViewer({
     params.set("page", newPage.toString());
     router.push(`?${params.toString()}`);
   };
-  
+
   const handleClearLogs = () => {
-    const confirmMessage = dictionary.clearConfirmation.replace("{logType}", logType);
+    const confirmMessage = dictionary.clearConfirmation.replace(
+      "{logType}",
+      logType
+    );
     toast(confirmMessage, {
       action: {
         label: dictionary.confirm,
@@ -88,15 +90,21 @@ export function LogViewer({
       setSelectedLogIds(new Set());
     }
   };
-  
+
   const handleBulkDelete = () => {
-    const confirmMessage = dictionary.bulkDeleteConfirmation.replace("{count}", selectedLogIds.size.toString());
+    const confirmMessage = dictionary.bulkDeleteConfirmation.replace(
+      "{count}",
+      selectedLogIds.size.toString()
+    );
     toast(confirmMessage, {
       action: {
         label: dictionary.confirm,
         onClick: () => {
           startTransition(async () => {
-            const result = await deleteLogsAction(Array.from(selectedLogIds), logType);
+            const result = await deleteLogsAction(
+              Array.from(selectedLogIds),
+              logType
+            );
             if (result.error) {
               toast.error(result.error);
             } else {
@@ -122,11 +130,7 @@ export function LogViewer({
     const rangeWithDots: (number | string)[] = [];
     let l: number | undefined;
     for (let i = 1; i <= totalPages; i++) {
-      if (
-        i === 1 ||
-        i === totalPages ||
-        (i >= left - 1 && i <= right + 1)
-      ) {
+      if (i === 1 || i === totalPages || (i >= left - 1 && i <= right + 1)) {
         range.push(i);
       }
     }
@@ -153,17 +157,23 @@ export function LogViewer({
             <TabsTrigger value="error">{dictionary.tabs.error}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button variant="destructive" onClick={handleClearLogs} disabled={isPending}>
-          {isPending ? dictionary.clearing : `${dictionary.clearAll} ${logType} ${dictionary.logs}`}
+        <Button
+          variant="destructive"
+          onClick={handleClearLogs}
+          disabled={isPending}
+        >
+          {isPending
+            ? dictionary.clearing
+            : `${dictionary.clearAll} ${logType} ${dictionary.logs}`}
         </Button>
       </div>
-      
+
       <FilterBar dictionary={dictionary.filters} />
-      
+
       {selectedLogIds.size > 0 && (
         <BulkActionToolbar
           selectedCount={selectedLogIds.size}
-          onDelete={handleBulkDelete}
+          onBulkDelete={handleBulkDelete}
           isPending={isPending}
           dictionary={dictionary}
         />
@@ -178,7 +188,7 @@ export function LogViewer({
         onViewLog={setViewingLog}
         dictionary={dictionary}
       />
-      
+
       <Pagination>
         <PaginationContent>
           <PaginationItem>

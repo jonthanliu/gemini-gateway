@@ -1,4 +1,3 @@
-
 // Architectural Decision:
 // The KeyUsageDetail component is a client-side component designed to fetch and display
 // detailed usage information for a single API key. It is rendered within a dialog.
@@ -49,7 +48,7 @@ export function KeyUsageDetail({ apiKey, dictionary }: KeyUsageDetailProps) {
         if (result.error) {
           setError(result.error);
         } else {
-          setDetails(result.data);
+          setDetails(result.data ?? null);
         }
       })
       .catch((e) => {

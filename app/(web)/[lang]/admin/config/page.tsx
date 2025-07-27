@@ -1,4 +1,3 @@
-
 // Architectural Decision:
 // This server component serves as the entry point for the configuration page.
 // Its primary responsibility is to fetch the application's current settings on the server
@@ -29,9 +28,9 @@ export const revalidate = 0; // Disable caching to ensure fresh settings are alw
 export default async function ConfigPage({
   params,
 }: {
-  params: { lang: Locale };
+  params: Promise<{ lang: Locale }>;
 }) {
-  const { lang } = params;
+  const { lang } = await params;
   const dictionary = await getDictionary(lang);
   const settings = await getSettings();
 
@@ -39,10 +38,15 @@ export default async function ConfigPage({
     <Card>
       <CardHeader>
         <CardTitle>{dictionary.admin.config.form.title}</CardTitle>
-        <CardDescription>{dictionary.admin.config.form.description}</CardDescription>
+        <CardDescription>
+          {dictionary.admin.config.form.description}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <ConfigForm settings={settings} dictionary={dictionary.admin.config.form} />
+        <ConfigForm
+          settings={settings}
+          dictionary={dictionary.admin.config.form}
+        />
       </CardContent>
     </Card>
   );

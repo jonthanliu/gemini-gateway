@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -13,15 +12,14 @@ import { Dictionary } from "@/lib/i18n/dictionaries";
 import { formatApiKey } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import {
-  getDetailedApiCallStatsAction,
   DetailedApiCallStats,
+  getDetailedApiCallStatsAction,
 } from "../actions/key.action";
 
 type TimeFrame = "1m" | "1h" | "24h";
 
-// Use a precise type for the dictionary prop by intersecting the required parts.
-// This is much more maintainable than creating a custom type.
-type ApiCallStatsDetailDictionary = Dictionary["admin"]["dashboard"] &
+// This component only needs the 'usage' dictionary.
+type ApiCallStatsDetailDictionary =
   Dictionary["admin"]["keys"]["table"]["usage"];
 
 interface ApiCallStatsDetailProps {
@@ -82,7 +80,8 @@ export function ApiCallStatsDetail({
           <TableHeader>
             <TableRow>
               <TableHead>{dictionary.time}</TableHead>
-              <TableHead>Key</TableHead> {/* Assuming generic 'Key' from another part of dict */}
+              <TableHead>Key</TableHead>{" "}
+              {/* Assuming generic 'Key' from another part of dict */}
               <TableHead>{dictionary.model}</TableHead>
               <TableHead>{dictionary.status}</TableHead>
             </TableRow>

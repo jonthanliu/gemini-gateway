@@ -13,9 +13,9 @@ import { Locale } from "@/i18n-config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 interface AdminPageProps {
-  params: {
+  params: Promise<{
     lang: Locale;
-  };
+  }>;
 }
 
 export default async function AdminPage({ params }: AdminPageProps) {
