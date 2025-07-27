@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { login } from "../actions/auth";
+import { login, type FormState } from "../actions/login.action";
 
 // The SubmitButton is a sub-component that uses the `useFormStatus` hook.
 // This hook provides the pending status of the form submission, allowing us
@@ -24,7 +24,10 @@ export function LoginForm() {
   // `useActionState` is a React hook that manages the state transitions for a form action.
   // It takes the server action (`login`) and an initial state as arguments.
   // It returns the current state and a wrapped action to be used in the form.
-  const [state, formAction] = useActionState(login, { error: undefined });
+  const [state, formAction] = useActionState<FormState, FormData>(login, {
+    success: false,
+    message: "",
+  });
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -33,21 +36,21 @@ export function LoginForm() {
         <form action={formAction} className="space-y-6">
           <div>
             <label
-              htmlFor="token"
+              htmlFor="password"
               className="block text-sm font-medium text-gray-700"
             >
-              Auth Token
+              Password
             </label>
             <input
-              id="token"
-              name="token"
+              id="password"
+              name="password"
               type="password"
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
-          {state?.error && (
-            <p className="text-sm text-red-600">{state.error}</p>
+          {!state.success && state.message && (
+            <p className="text-sm text-red-600">{state.message}</p>
           )}
           <div>
             <SubmitButton />
