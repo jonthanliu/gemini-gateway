@@ -60,3 +60,41 @@
 ---
 
 至此，基础架构搭建工作已全部完成。新架构现已准备就绪，可以开始进行功能迁移。
+
+---
+
+## 第二阶段：核心功能迁移 (已完成)
+
+本阶段的目标是将旧 `(webapp)_deprecated` 中的核心管理功能迁移到新的 `(web)` 架构中。
+
+### 1. 迁移仪表盘 (Dashboard)
+- **策略**: 采用服务端组件 (`RSC`) 优先的原则，将数据获取和业务逻辑尽可能地放在服务器端。
+- **操作**:
+  1. 创建了新的 `Dashboard.tsx` 异步服务器组件，负责在内部并行获取所有密钥 (`getAllKeys`) 和系统统计数据 (`getSystemApiCallStats`)。
+  2. 重构了 `DashboardStats.tsx`，使其同时展示密钥统计和系统调用统计，并恢复了点击弹出详情的功能。
+  3. 迁移并重构了 `KeyList.tsx`, `KeyTable.tsx`, `KeyUsageDetail.tsx`, `KeyStatsDetail.tsx`, `ApiCallStatsDetail.tsx` 等一系列子组件，确保它们与新的数据流和类型定义兼容。
+  4. 调整了 `admin/page.tsx`，使其在用户登录且已配置密钥后，直接渲染自包含的 `Dashboard` 组件。
+- **目的**: 实现了一个性能更优、逻辑更内聚的仪表盘，将数据获取的责任从页面层下移到了组件层。
+
+### 2. 迁移配置页面 (Config)
+- **策略**: 将数据库操作严格限制在服务层，Action 层只做调用和处理 HTTP 相关的逻辑。
+- **操作**:
+  1. 创建了新的 `config.service.ts` 服务，封装了所有与配置读写相关的数据库逻辑。
+  2. 创建了新的 `config.action.ts`，其中的 `updateSettingsAction` 只负责调用服务并触发缓存失效 (`revalidatePath`)。
+  3. 创建了新的 `config/page.tsx` 路由，负责获取初始设置并传递给表单。
+  4. 迁移了 `ConfigForm.tsx` 和 `DynamicListInput.tsx` 组件，并改进了其类型安全。
+- **目的**: 建立了清晰的逻辑分层，使配置管理功能更健壮、更易于维护。
+
+### 3. 迁移日志页面 (Logs)
+- **策略**: 遵循与配置页面相同的分层原则。
+- **操作**:
+  1. 创建了新的 `log.service.ts` 服务，封装了所有日志查询、删除的数据库逻辑。
+  2. 创建了新的 `log.action.ts`，为服务函数提供 wrappers。
+  3. 创建了新的 `logs/page.tsx` 路由，负责解析 URL 查询参数并发起初始的日志数据请求。
+  4. 迁移了 `LogViewer.tsx` 及其所有子组件 (`FilterBar.tsx`, `LogTable.tsx`, `LogDetailsDialog.tsx`)，并修复了其中所有的类型错误和未使用的变量。
+- **目的**: 完成了日志查看功能的现代化改造，使其与新的架构完全集成。
+
+### 4. 修复与重构
+- 在整个迁移过程中，修复了大量的 `eslint` 错误、`TypeScript` 类型错误、运行时错误和逻辑缺陷。
+- 重构了 `key.service.ts` 和 `key.action.ts`，统一了数据库操作的出口，并大大增强了 `addApiKeys` 等核心功能的健壮性。
+
