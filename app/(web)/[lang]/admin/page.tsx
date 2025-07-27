@@ -9,13 +9,23 @@ import { Dashboard } from "./components/Dashboard";
 import { LoginForm } from "./components/LoginForm";
 import { Onboarding } from "./components/Onboarding";
 
-export default async function AdminPage() {
+import { Locale } from "@/i18n-config";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+
+interface AdminPageProps {
+  params: {
+    lang: Locale;
+  };
+}
+
+export default async function AdminPage({ params }: AdminPageProps) {
   // This page is the core logic gate for the admin panel.
   // It orchestrates the display of different states of the application
   // based on two critical pieces of information:
   // 1. Is the user logged in?
   // 2. Are there any API keys configured in the system?
-
+  const { lang } = await params;
+  const dictionary = await getDictionary(lang);
   const isLoggedIn = await checkAuthState();
 
   // If the user is not logged in, the only possible action is to show the login form.
@@ -28,9 +38,9 @@ export default async function AdminPage() {
 
   // If there are no keys, the user must be guided to add their first key.
   if (!hasKeys) {
-    return <Onboarding />;
+    return <Onboarding dictionary={dictionary.admin} />;
   }
 
   // If the user is logged in and keys exist, show the main dashboard.
-  return <Dashboard />;
+  return <Dashboard dictionary={dictionary.admin} />;
 }
