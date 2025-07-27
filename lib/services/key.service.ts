@@ -1,8 +1,19 @@
-
 import { db } from "@/lib/db";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
 import logger from "@/lib/logger";
-import { and, count, desc, eq, gte, inArray, isNull, lte, max, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  max,
+  or,
+  sql,
+} from "drizzle-orm";
 
 const KEY_COOLDOWN_PERIOD_SECONDS = 5 * 60; // 5 minutes
 
@@ -151,9 +162,7 @@ export async function addApiKeys(
       .from(apiKeys)
       .where(inArray(apiKeys.key, uniqueKeys));
     const existingKeySet = new Set(existingKeysResult.map((k) => k.key));
-    const newKeysToAdd = uniqueKeys.filter(
-      (key) => !existingKeySet.has(key)
-    );
+    const newKeysToAdd = uniqueKeys.filter((key) => !existingKeySet.has(key));
     const duplicates = uniqueKeys.length - newKeysToAdd.length;
     if (newKeysToAdd.length > 0) {
       const newKeyRecords = newKeysToAdd.map((key) => ({
@@ -187,7 +196,10 @@ export async function deleteApiKeys(keys: string[]) {
     .delete(apiKeys)
     .where(inArray(apiKeys.key, keys))
     .returning();
-  logger.info({ count: deleteResponse.length }, "Successfully deleted API keys.");
+  logger.info(
+    { count: deleteResponse.length },
+    "Successfully deleted API keys."
+  );
   return deleteResponse;
 }
 
@@ -196,7 +208,9 @@ export async function getKeyUsageDetails(apiKey: string) {
   const statsResult = await db
     .select({
       total: count(),
-      success: count(sql<number>`CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 END`),
+      success: count(
+        sql<number>`CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 END`
+      ),
     })
     .from(requestLogs)
     .where(where);
@@ -294,7 +308,9 @@ export async function getDetailedApiCallStats(timeframe: TimeFrame) {
     const statsResult = await db
       .select({
         total: count(),
-        success: count(sql<number>`CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 END`),
+        success: count(
+          sql<number>`CASE WHEN ${requestLogs.isSuccess} = 1 THEN 1 END`
+        ),
       })
       .from(requestLogs)
       .where(where);
@@ -306,6 +322,8 @@ export async function getDetailedApiCallStats(timeframe: TimeFrame) {
       { error, timeframe },
       `Failed to fetch detailed API call stats for ${timeframe}.`
     );
-    throw new Error(`Failed to fetch detailed API call stats for ${timeframe}.`);
+    throw new Error(
+      `Failed to fetch detailed API call stats for ${timeframe}.`
+    );
   }
 }

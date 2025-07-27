@@ -1,4 +1,4 @@
-import { convertAnthropicToGemini } from "@/lib/transforms/anthropic-to-gemini";
+import { convertAnthropicToGemini } from "@/lib/adapters/anthropic-to-gemini";
 import type * as Anthropic from "@anthropic-ai/sdk/resources/messages";
 import { describe, expect, it } from "vitest";
 

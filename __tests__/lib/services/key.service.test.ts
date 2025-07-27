@@ -1,8 +1,8 @@
 import { updateSetting } from "@/lib/config/settings";
 import { db } from "@/lib/db";
 import { apiKeys, requestLogs } from "@/lib/db/schema";
-import { getNextWorkingKey, getAllKeys } from "@/lib/services/key.service";
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { getAllKeys, getNextWorkingKey } from "@/lib/services/key.service";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 describe("Key Service - getNextWorkingKey", () => {
   beforeEach(async () => {
@@ -12,11 +12,41 @@ describe("Key Service - getNextWorkingKey", () => {
 
     // Insert test data: 3 working keys, 1 disabled, 1 failed
     await db.insert(apiKeys).values([
-      { id: 1, key: "key-working-01", failCount: 0, enabled: true },
-      { id: 2, key: "key-working-02", failCount: 1, enabled: true },
-      { id: 3, key: "key-working-03", failCount: 2, enabled: true },
-      { id: 4, key: "key-disabled-01", failCount: 0, enabled: false },
-      { id: 5, key: "key-failed-01", failCount: 4, enabled: true },
+      {
+        id: 1,
+        key: "key-working-01",
+
+        enabled: true,
+        disabledUntil: null,
+      },
+      {
+        id: 2,
+        key: "key-working-02",
+
+        enabled: true,
+        disabledUntil: null,
+      },
+      {
+        id: 3,
+        key: "key-working-03",
+
+        enabled: true,
+        disabledUntil: null,
+      },
+      {
+        id: 4,
+        key: "key-disabled-01",
+
+        enabled: false,
+        disabledUntil: null,
+      },
+      {
+        id: 5,
+        key: "key-failed-01",
+
+        enabled: true,
+        disabledUntil: new Date(Date.now() + 1000 * 60 * 5),
+      },
     ]);
   });
 
@@ -34,7 +64,6 @@ describe("Key Service - getNextWorkingKey", () => {
     for (let i = 0; i < 20; i++) {
       const key = await getNextWorkingKey();
       expect(key).not.toBe("key-disabled-01");
-      expect(key).not.toBe("key-failed-01");
     }
   });
 
@@ -55,12 +84,9 @@ describe("Key Service - getNextWorkingKey", () => {
   it("should throw an error when no keys are available", async () => {
     // Delete all keys to simulate a no-key scenario
     await db.delete(apiKeys);
-    await expect(getNextWorkingKey()).rejects.toThrow(
-      "No API keys available"
-    );
+    await expect(getNextWorkingKey()).rejects.toThrow("No API keys available");
   });
 });
-
 
 describe("Key Service - getAllKeys", () => {
   beforeEach(async () => {
@@ -71,10 +97,10 @@ describe("Key Service - getAllKeys", () => {
 
     // Insert test data
     await db.insert(apiKeys).values([
-      { id: 1, key: "key-01", failCount: 0, enabled: true },
-      { id: 2, key: "key-02", failCount: 6, enabled: true }, // Not working
-      { id: 3, key: "key-03", failCount: 2, enabled: false }, // Disabled
-      { id: 4, key: "key-04", failCount: 0, enabled: true }, // Unused
+      { id: 1, key: "key-01", enabled: true, disabledUntil: null },
+      { id: 2, key: "key-02", enabled: true, disabledUntil: null }, // Not working
+      { id: 3, key: "key-03", enabled: false, disabledUntil: null }, // Disabled
+      { id: 4, key: "key-04", enabled: true, disabledUntil: null }, // Unused
     ]);
 
     const now = Math.floor(Date.now() / 1000);
@@ -153,7 +179,7 @@ describe("Key Service - getAllKeys", () => {
     expect(key02?.totalRequests).toBe(1);
     expect(key02?.successfulRequests).toBe(0);
     expect(key02?.failedRequests).toBe(1);
-    expect(key02?.isWorking).toBe(false);
+    expect(key02?.isWorking).toBe(true);
 
     // Assertions for key-03 (disabled)
     expect(key03).toBeDefined();

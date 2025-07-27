@@ -1,8 +1,9 @@
 // vitest.setup.ts
-import { beforeAll } from "vitest";
+import { execSync } from "child_process";
 import { randomUUID } from "crypto";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import { beforeAll } from "vitest";
 
 beforeAll(() => {
   const dbDir = path.resolve(process.cwd(), "db");
@@ -11,4 +12,5 @@ beforeAll(() => {
   }
   const dbPath = path.join(dbDir, `${randomUUID()}.db`);
   process.env.DATABASE_URL = `file:${dbPath}`;
+  execSync("pnpm drizzle-kit migrate", { stdio: "inherit" });
 });
