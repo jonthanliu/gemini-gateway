@@ -1,3 +1,4 @@
+import { getSettings } from "../config/settings";
 import logger from "@/lib/logger";
 import {
   CircuitBreakerError,
@@ -5,13 +6,21 @@ import {
   handleApiFailure,
   resetKeyStatus,
 } from "@/lib/services/key.service";
+import { Agent } from "http";
+import { HttpsProxyAgent } from "https-proxy-agent";
+
+interface FetchOptions extends RequestInit {
+  agent?: Agent;
+  duplex?: "half";
+}
+
 
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000;
 
 async function fetchWithRetries(
   url: string,
-  options: RequestInit
+  options: FetchOptions
 ): Promise<Response> {
   let apiKey: string;
   try {
@@ -25,6 +34,11 @@ async function fetchWithRetries(
 
   const urlWithKey = `${url}${url.includes("?") ? "&" : "?"}key=${apiKey}`;
   let lastError: Error | null = null;
+
+  const settings = await getSettings();
+  if (settings.PROXY_URL) {
+    options.agent = new HttpsProxyAgent(settings.PROXY_URL);
+  }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {

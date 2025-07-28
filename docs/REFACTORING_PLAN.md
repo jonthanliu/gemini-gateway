@@ -48,7 +48,7 @@
 
 **提交**: `git commit -m "refactor(adapters): separate openai response adapter"`
 
-#### 步骤 1.2: 重命名 `gemini_client.ts`
+#### [DONE] 步骤 1.2: 重命名 `gemini_client.ts`
 
 **目标**: 统一文件名格式（使用连字符 `-` 而不是下划线 `_`）。
 
