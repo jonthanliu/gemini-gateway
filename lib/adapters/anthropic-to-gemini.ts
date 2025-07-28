@@ -62,7 +62,7 @@ export function convertAnthropicToGemini(
       ? request.system.map((s) => s.text).join("\n")
       : request.system;
     geminiRequest.systemInstruction = {
-      role: "system",
+      role: "user",
       parts: [{ text: systemText }],
     };
   }

@@ -32,7 +32,7 @@ describe("convertAnthropicToGemini", () => {
     const geminiRequest = convertAnthropicToGemini(anthropicRequest);
 
     expect(geminiRequest.systemInstruction).toEqual({
-      role: "system",
+      role: "user",
       parts: [{ text: "You are a helpful assistant." }],
     });
     expect(geminiRequest.contents).toHaveLength(1);

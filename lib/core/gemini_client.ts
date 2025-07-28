@@ -1,5 +1,6 @@
 import logger from "@/lib/logger";
 import {
+  CircuitBreakerError,
   getNextWorkingKey,
   handleApiFailure,
   resetKeyStatus,
@@ -12,13 +13,20 @@ async function fetchWithRetries(
   url: string,
   options: RequestInit
 ): Promise<Response> {
+  let apiKey: string;
+  try {
+    apiKey = await getNextWorkingKey();
+  } catch (error) {
+    if (error instanceof CircuitBreakerError) {
+      throw new Error("Service unavailable: All API keys are in cooldown.");
+    }
+    throw new Error("Service unavailable: No API keys available.");
+  }
+
+  const urlWithKey = `${url}${url.includes("?") ? "&" : "?"}key=${apiKey}`;
   let lastError: Error | null = null;
-  let attempts = 0;
 
-  while (attempts < MAX_RETRIES) {
-    const apiKey = await getNextWorkingKey();
-    const urlWithKey = `${url}${url.includes("?") ? "&" : "?"}key=${apiKey}`;
-
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const response = await fetch(urlWithKey, options);
 
@@ -27,50 +35,72 @@ async function fetchWithRetries(
         return response;
       }
 
-      // If response is not ok, we treat it as a failure for this key
+      if (response.status === 429) {
+        const retryAfter = response.headers.get("Retry-After");
+        let cooldownSeconds;
+        if (retryAfter) {
+          const retryAfterSeconds = parseInt(retryAfter, 10);
+          if (!isNaN(retryAfterSeconds)) {
+            cooldownSeconds = retryAfterSeconds;
+          } else {
+            const retryAfterDate = new Date(retryAfter);
+            if (!isNaN(retryAfterDate.getTime())) {
+              cooldownSeconds = Math.ceil(
+                (retryAfterDate.getTime() - Date.now()) / 1000
+              );
+            }
+          }
+        }
+        logger.warn(
+          {
+            key: `...${apiKey.slice(-4)}`,
+            status: 429,
+            retryAfter: retryAfter || "N/A",
+          },
+          "Rate limit on key. Cooling down."
+        );
+        await handleApiFailure(apiKey, cooldownSeconds);
+        throw new Error(
+          `Request failed with status 429. Please retry your request.`
+        );
+      }
+
+      lastError = new Error(`Request failed with status ${response.status}`);
       logger.warn(
         {
           status: response.status,
           key: `...${apiKey.slice(-4)}`,
+          attempt: attempt + 1,
         },
-        `Request failed with status ${response.status}. Marking key for cooldown.`
+        `Attempt ${attempt + 1} failed. Status: ${response.status}.`
       );
-      await handleApiFailure(apiKey);
-      lastError = new Error(`Request failed with status ${response.status}`);
     } catch (error) {
-      if (
-        error instanceof TypeError &&
-        error.message.includes("fetch failed")
-      ) {
-        logger.warn(
-          {
-            error: error.message,
-            key: `...${apiKey.slice(-4)}`,
-          },
-          "Fetch failed, likely a network error. Marking key for cooldown."
-        );
-        await handleApiFailure(apiKey);
-        lastError = error;
-      } else {
-        // Not a retryable error, so rethrow
+      if (error instanceof Error && error.message.includes("429")) {
         throw error;
       }
+      lastError = error as Error;
+      logger.warn(
+        {
+          error: lastError.message,
+          key: `...${apiKey.slice(-4)}`,
+          attempt: attempt + 1,
+        },
+        `Attempt ${attempt + 1} failed with error: ${lastError.message}.`
+      );
     }
 
-    // If we are here, it means the request failed and we are about to retry
-    attempts++;
-    if (attempts < MAX_RETRIES) {
-      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempts - 1);
-      logger.info(
-        `Retrying request... Attempt ${
-          attempts + 1
-        }/${MAX_RETRIES}. Waiting for ${delay}ms.`
-      );
+    if (attempt < MAX_RETRIES - 1) {
+      const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+      logger.info(`Waiting for ${delay}ms before retrying...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
-  throw lastError || new Error("Request failed after multiple retries.");
+  // If the loop completes, all retries for this key have failed.
+  await handleApiFailure(apiKey);
+  throw new Error(
+    "Request failed after all retries. Please retry your request."
+  );
 }
 
 export const geminiClient = {

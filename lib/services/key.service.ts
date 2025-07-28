@@ -15,10 +15,42 @@ import {
   sql,
 } from "drizzle-orm";
 
-const KEY_COOLDOWN_PERIOD_SECONDS = 5 * 60; // 5 minutes
+const KEY_COOLDOWN_PERIOD_SECONDS = 60; // 1 minute
+const GLOBAL_CIRCUIT_BREAKER_PERIOD_SECONDS = 60; // 1 minute
+
+let circuitBreakerTrippedUntil: Date | null = null;
+
+export class CircuitBreakerError extends Error {
+  public readonly trippedUntil: Date;
+  constructor(message: string, trippedUntil: Date) {
+    super(message);
+    this.name = "CircuitBreakerError";
+    this.trippedUntil = trippedUntil;
+  }
+}
+
+export function tripCircuitBreaker() {
+  if (!circuitBreakerTrippedUntil || new Date() > circuitBreakerTrippedUntil) {
+    const now = new Date();
+    circuitBreakerTrippedUntil = new Date(
+      now.getTime() + GLOBAL_CIRCUIT_BREAKER_PERIOD_SECONDS * 1000
+    );
+    logger.error(
+      { trippedUntil: circuitBreakerTrippedUntil.toISOString() },
+      "GLOBAL CIRCUIT BREAKER TRIPPED."
+    );
+  }
+}
 
 export async function getNextWorkingKey(): Promise<string> {
   const now = new Date();
+  if (circuitBreakerTrippedUntil && now < circuitBreakerTrippedUntil) {
+    throw new CircuitBreakerError(
+      `Circuit breaker is tripped. No requests will be made until ${circuitBreakerTrippedUntil.toISOString()}.`,
+      circuitBreakerTrippedUntil
+    );
+  }
+  circuitBreakerTrippedUntil = null; // Reset if time has passed
   const validKeys = await db
     .select({ key: apiKeys.key })
     .from(apiKeys)
@@ -43,11 +75,17 @@ export async function getNextWorkingKey(): Promise<string> {
   return keyToUse.key;
 }
 
-export async function handleApiFailure(key: string): Promise<void> {
+export async function handleApiFailure(
+  key: string,
+  cooldownSeconds?: number
+): Promise<void> {
   const now = new Date();
-  const disabledUntil = new Date(
-    now.getTime() + KEY_COOLDOWN_PERIOD_SECONDS * 1000
-  );
+  const cooldown =
+    cooldownSeconds !== undefined
+      ? cooldownSeconds
+      : KEY_COOLDOWN_PERIOD_SECONDS;
+  const disabledUntil = new Date(now.getTime() + cooldown * 1000);
+
   try {
     await db
       .update(apiKeys)
@@ -61,6 +99,7 @@ export async function handleApiFailure(key: string): Promise<void> {
       {
         key: `...${key.slice(-4)}`,
         disabledUntil: disabledUntil.toISOString(),
+        cooldownSeconds: cooldown,
       },
       "Cooldown initiated for failing API key."
     );
@@ -325,5 +364,40 @@ export async function getDetailedApiCallStats(timeframe: TimeFrame) {
     throw new Error(
       `Failed to fetch detailed API call stats for ${timeframe}.`
     );
+  }
+}
+
+export async function checkAndResetKeyStatus(): Promise<void> {
+  const now = new Date();
+  const keysInCooldown = await db
+    .select({ key: apiKeys.key })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.enabled, true), lte(apiKeys.disabledUntil, now)));
+
+  if (keysInCooldown.length === 0) {
+    return;
+  }
+
+  logger.info(
+    { count: keysInCooldown.length },
+    "Found keys in cooldown. Performing health checks."
+  );
+
+  const GOOGLE_API_HOST =
+    process.env.GOOGLE_API_HOST || "https://generativelanguage.googleapis.com";
+  const healthCheckUrl = `${GOOGLE_API_HOST}/v1beta/models`;
+
+  for (const { key } of keysInCooldown) {
+    try {
+      const response = await fetch(`${healthCheckUrl}?key=${key}`);
+      if (response.ok) {
+        await resetKeyStatus(key);
+      }
+    } catch (error) {
+      logger.warn(
+        { key: `...${key.slice(-4)}`, error },
+        "Health check failed for key."
+      );
+    }
   }
 }
