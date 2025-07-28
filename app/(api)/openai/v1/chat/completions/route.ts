@@ -1,8 +1,10 @@
 import {
-  streamGeminiToOpenAI,
-  transformGeminiResponseToOpenAI,
   transformOpenAIRequestToGemini,
 } from "@/lib/adapters/openai-to-gemini";
+import {
+  streamGeminiToOpenAI,
+  transformGeminiResponseToOpenAI,
+} from "@/lib/adapters/gemini-to-openai";
 import { geminiClient } from "@/lib/core/gemini_client";
 import logger from "@/lib/logger";
 import { iteratorToStream, streamToAsyncIterable } from "@/lib/stream-utils";

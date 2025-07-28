@@ -1,8 +1,10 @@
 import {
-  streamGeminiToOpenAI,
-  transformGeminiResponseToOpenAI,
   transformOpenAIRequestToGemini,
 } from "@/lib/adapters/openai-to-gemini";
+import {
+  streamGeminiToOpenAI,
+  transformGeminiResponseToOpenAI,
+} from "@/lib/adapters/gemini-to-openai";
 import { OpenAIChatCompletionRequest } from "@/lib/types/openai-types";
 import { FinishReason, GenerateContentResult } from "@google/generative-ai";
 import { describe, expect, it } from "vitest";
