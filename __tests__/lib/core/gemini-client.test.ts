@@ -1,4 +1,4 @@
-import { geminiClient } from "@/lib/core/gemini_client";
+import { geminiClient } from "@/lib/core/gemini-client";
 import * as keyService from "@/lib/services/key.service";
 import { CircuitBreakerError } from "@/lib/services/key.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";

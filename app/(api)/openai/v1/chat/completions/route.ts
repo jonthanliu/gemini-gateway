@@ -5,7 +5,7 @@ import {
   streamGeminiToOpenAI,
   transformGeminiResponseToOpenAI,
 } from "@/lib/adapters/gemini-to-openai";
-import { geminiClient } from "@/lib/core/gemini_client";
+import { geminiClient } from "@/lib/core/gemini-client";
 import logger from "@/lib/logger";
 import { iteratorToStream, streamToAsyncIterable } from "@/lib/stream-utils";
 import { NextRequest, NextResponse } from "next/server";

@@ -1,6 +1,6 @@
 import { convertAnthropicToGemini } from "@/lib/adapters/anthropic-to-gemini";
 import { streamGeminiToAnthropic } from "@/lib/adapters/gemini-to-anthropic";
-import { geminiClient } from "@/lib/core/gemini_client";
+import { geminiClient } from "@/lib/core/gemini-client";
 import logger from "@/lib/logger";
 import { CircuitBreakerError } from "@/lib/services/key.service";
 import { streamToAsyncIterable } from "@/lib/stream-utils";
