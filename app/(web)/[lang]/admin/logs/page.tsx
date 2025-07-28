@@ -49,11 +49,7 @@ export default async function LogsPage({
         <CardDescription>{dictionary.admin.logs.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <LogViewer
-          initialLogs={logData.logs}
-          initialTotal={logData.total}
-          dictionary={dictionary.admin.logs}
-        />
+        <LogViewer initialLogs={logData.logs} initialTotal={logData.total} />
       </CardContent>
     </Card>
   );

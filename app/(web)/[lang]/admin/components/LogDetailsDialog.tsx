@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { Log } from "@/lib/services/log.service";
 import { formatApiKey } from "@/lib/utils";
 import { Copy } from "lucide-react";
@@ -16,14 +15,15 @@ import { Copy } from "lucide-react";
 interface LogDetailsDialogProps {
   viewingLog: Log | null;
   setViewingLog: (log: Log | null) => void;
-  dictionary: Dictionary["admin"]["logs"]["details"];
 }
 
 export function LogDetailsDialog({
   viewingLog,
   setViewingLog,
-  dictionary,
 }: LogDetailsDialogProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.logs.details;
+
   return (
     <Dialog
       open={!!viewingLog}
@@ -32,10 +32,7 @@ export function LogDetailsDialog({
       <DialogContent className="w-full max-w-[95vw] h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {dictionary.title.replace(
-              "{id}",
-              viewingLog?.id.toString() || ""
-            )}
+            {dict.title.replace("{id}", viewingLog?.id.toString() || "")}
           </DialogTitle>
         </DialogHeader>
         {viewingLog && (
@@ -56,9 +53,7 @@ export function LogDetailsDialog({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() =>
-                      navigator.clipboard.writeText(String(value))
-                    }
+                    onClick={() => navigator.clipboard.writeText(String(value))}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>

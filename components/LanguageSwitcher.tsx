@@ -8,10 +8,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { i18n } from "@/i18n-config";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { Globe } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function LanguageSwitcher() {
+  const dictionary = useDictionary();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +36,9 @@ export default function LanguageSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
           <Globe className="h-[1.2rem] w-[1.2rem]" />
-          <span className="sr-only">Switch language</span>
+          <span className="sr-only">
+            {dictionary.admin.languageSwitcher.title}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -43,7 +47,11 @@ export default function LanguageSwitcher() {
             key={locale}
             onClick={() => handleSwitchLanguage(locale)}
           >
-            {locale === "en" ? "English" : "中文"}
+            {
+              dictionary.admin.languageSwitcher[
+                locale as keyof typeof dictionary.admin.languageSwitcher
+              ]
+            }
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { formatApiKey } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import {
@@ -17,14 +17,10 @@ import {
   getDetailedKeyStatsAction,
 } from "../actions/key.action";
 
-type KeyStatsDetailDictionary = Dictionary["admin"]["keys"]["table"] &
-  Pick<Dictionary["admin"]["dashboard"], "activeKeys" | "inactiveKeys">;
-
-interface KeyStatsDetailProps {
-  dictionary: KeyStatsDetailDictionary;
-}
-
-export function KeyStatsDetail({ dictionary }: KeyStatsDetailProps) {
+export function KeyStatsDetail() {
+  const dictionary = useDictionary();
+  const tableDict = dictionary.admin.keys.table;
+  const dashboardDict = dictionary.admin.dashboard;
   const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState<DetailedKeyStats>([]);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +51,8 @@ export function KeyStatsDetail({ dictionary }: KeyStatsDetailProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{dictionary.key}</TableHead>
-            <TableHead>{dictionary.lastFailedAt}</TableHead>
+            <TableHead>{tableDict.key}</TableHead>
+            <TableHead>{tableDict.lastFailedAt}</TableHead>
             <TableHead>Created At</TableHead> {/* Fallback */}
           </TableRow>
         </TableHeader>
@@ -89,13 +85,13 @@ export function KeyStatsDetail({ dictionary }: KeyStatsDetailProps) {
     <Tabs defaultValue="active">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="active">
-          {dictionary.activeKeys.replace(
+          {dashboardDict.activeKeys.replace(
             "{count}",
             activeKeys.length.toString()
           )}
         </TabsTrigger>
         <TabsTrigger value="inactive">
-          {dictionary.inactiveKeys.replace(
+          {dashboardDict.inactiveKeys.replace(
             "{count}",
             inactiveKeys.length.toString()
           )}

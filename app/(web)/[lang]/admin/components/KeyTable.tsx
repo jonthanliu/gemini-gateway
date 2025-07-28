@@ -1,4 +1,3 @@
-
 // Architectural Decision:
 // The KeyTable component is a "pure" client component focused on rendering the list of API keys.
 // Its primary role is to display the data provided by its parent and delegate user actions.
@@ -41,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { GetAllKeysReturnType } from "@/lib/services/key.service";
 import { formatApiKey } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
@@ -55,7 +54,6 @@ interface KeyTableProps {
   selectedKeys: Set<string>;
   onKeySelectionChange: (key: string, isSelected: boolean) => void;
   onSelectAllChange: (allSelected: boolean) => void;
-  dictionary: Dictionary["admin"]["keys"]["table"];
 }
 
 export function KeyTable({
@@ -63,19 +61,20 @@ export function KeyTable({
   selectedKeys,
   onKeySelectionChange,
   onSelectAllChange,
-  dictionary,
 }: KeyTableProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.keys.table;
   const [isPending, startTransition] = useTransition();
   const [viewingKey, setViewingKey] = useState<string | null>(null);
 
   const handleDelete = (key: string) => {
-    const confirmMessage = dictionary.deleteConfirmation.replace(
+    const confirmMessage = dict.deleteConfirmation.replace(
       "{key}",
       formatApiKey(key)
     );
     toast(confirmMessage, {
       action: {
-        label: dictionary.confirm,
+        label: dict.confirm,
         onClick: () => {
           startTransition(async () => {
             const result = await deleteApiKeysAction([key]);
@@ -99,15 +98,13 @@ export function KeyTable({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {dictionary.usageDetailsTitle.replace(
+              {dict.usageDetailsTitle.replace(
                 "{key}",
                 formatApiKey(viewingKey || "")
               )}
             </DialogTitle>
           </DialogHeader>
-          {viewingKey && (
-            <KeyUsageDetail apiKey={viewingKey} dictionary={dictionary.usage} />
-          )}
+          {viewingKey && <KeyUsageDetail apiKey={viewingKey} />}
         </DialogContent>
       </Dialog>
 
@@ -120,16 +117,16 @@ export function KeyTable({
                 onCheckedChange={(checked) =>
                   onSelectAllChange(Boolean(checked))
                 }
-                aria-label={dictionary.selectAllAria}
+                aria-label={dict.selectAllAria}
               />
             </TableHead>
-            <TableHead>{dictionary.key}</TableHead>
-            <TableHead>{dictionary.status}</TableHead>
-            <TableHead>{dictionary.failCount}</TableHead>
-            <TableHead>{dictionary.disabledUntil}</TableHead>
-            <TableHead>{dictionary.totalCalls}</TableHead>
-            <TableHead>{dictionary.lastFailedAt}</TableHead>
-            <TableHead className="text-right">{dictionary.actions}</TableHead>
+            <TableHead>{dict.key}</TableHead>
+            <TableHead>{dict.status}</TableHead>
+            <TableHead>{dict.failCount}</TableHead>
+            <TableHead>{dict.disabledUntil}</TableHead>
+            <TableHead>{dict.totalCalls}</TableHead>
+            <TableHead>{dict.lastFailedAt}</TableHead>
+            <TableHead className="text-right">{dict.actions}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -144,7 +141,7 @@ export function KeyTable({
                   onCheckedChange={(checked) =>
                     onKeySelectionChange(key.key, Boolean(checked))
                   }
-                  aria-label={dictionary.selectRowAria.replace(
+                  aria-label={dict.selectRowAria.replace(
                     "{key}",
                     formatApiKey(key.key)
                   )}
@@ -159,28 +156,32 @@ export function KeyTable({
                       : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                   }`}
                 >
-                  {key.isWorking ? dictionary.active : dictionary.inactive}
+                  {key.isWorking ? dict.active : dict.inactive}
                 </span>
               </TableCell>
               <TableCell>{key.failedRequests}</TableCell>
-              <TableCell>{key.disabledUntil ? new Date(key.disabledUntil).toLocaleString() : dictionary.notApplicable}</TableCell>
+              <TableCell>
+                {key.disabledUntil
+                  ? new Date(key.disabledUntil).toLocaleString()
+                  : dict.notApplicable}
+              </TableCell>
               <TableCell>{key.totalRequests}</TableCell>
               <TableCell>
                 {key.lastFailedAt
                   ? new Date(key.lastFailedAt).toLocaleString()
-                  : dictionary.notApplicable}
+                  : dict.notApplicable}
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">{dictionary.openMenuAria}</span>
+                      <span className="sr-only">{dict.openMenuAria}</span>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setViewingKey(key.key)}>
-                      {dictionary.viewDetails}
+                      {dict.viewDetails}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -188,7 +189,7 @@ export function KeyTable({
                       onClick={() => handleDelete(key.key)}
                       disabled={isPending}
                     >
-                      {dictionary.delete}
+                      {dict.delete}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

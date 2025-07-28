@@ -1,4 +1,3 @@
-
 // Architectural Decision:
 // The KeyList component is a "smart" client component responsible for displaying and managing API keys.
 // It encapsulates all client-side logic for filtering, selection, and performing actions on keys.
@@ -25,7 +24,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { GetAllKeysReturnType } from "@/lib/services/key.service";
 import { Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -35,10 +34,11 @@ import { KeyTable } from "./KeyTable";
 
 interface KeyListProps {
   keys: GetAllKeysReturnType;
-  dictionary: Dictionary["admin"]["keys"]["table"];
 }
 
-export function KeyList({ keys, dictionary }: KeyListProps) {
+export function KeyList({ keys }: KeyListProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.keys.table;
   const [isPending, startTransition] = useTransition();
   const [keyFragmentFilter, setKeyFragmentFilter] = useState("");
   const [selectedKeys, setSelectedKeys] = useState(new Set<string>());
@@ -65,7 +65,10 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
     });
   };
 
-  const handleSelectAllChange = (keysToChange: GetAllKeysReturnType, allSelected: boolean) => {
+  const handleSelectAllChange = (
+    keysToChange: GetAllKeysReturnType,
+    allSelected: boolean
+  ) => {
     setSelectedKeys((prev) => {
       const newSet = new Set(prev);
       if (allSelected) {
@@ -78,14 +81,14 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
   };
 
   const handleBulkDelete = () => {
-    const confirmMessage = dictionary.bulkDeleteConfirmation.replace(
+    const confirmMessage = dict.bulkDeleteConfirmation.replace(
       "{count}",
       selectedKeys.size.toString()
     );
 
     toast(confirmMessage, {
       action: {
-        label: dictionary.confirm,
+        label: dict.confirm,
         onClick: () => {
           startTransition(async () => {
             const result = await deleteApiKeysAction(Array.from(selectedKeys));
@@ -104,7 +107,7 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
   const BulkActionToolbar = () => (
     <div className="mb-4 flex items-center justify-between rounded-lg bg-muted p-2">
       <span className="text-sm font-medium">
-        {dictionary.selected.replace("{count}", selectedKeys.size.toString())}
+        {dict.selected.replace("{count}", selectedKeys.size.toString())}
       </span>
       <div className="flex gap-2">
         <Button
@@ -114,7 +117,7 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
           disabled={isPending}
         >
           <Trash2 className="mr-2 h-4 w-4" />
-          {dictionary.bulkDelete}
+          {dict.bulkDelete}
         </Button>
       </div>
     </div>
@@ -130,15 +133,12 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
       >
         <AccordionItem value="active-keys">
           <AccordionTrigger>
-            {dictionary.activeKeys.replace(
-              "{count}",
-              activeKeys.length.toString()
-            )}
+            {dict.activeKeys.replace("{count}", activeKeys.length.toString())}
           </AccordionTrigger>
           <AccordionContent>
             <div className="mb-4 flex gap-4">
               <Input
-                placeholder={dictionary.searchPlaceholder}
+                placeholder={dict.searchPlaceholder}
                 value={keyFragmentFilter}
                 onChange={(e) => setKeyFragmentFilter(e.target.value)}
                 className="max-w-xs"
@@ -151,13 +151,12 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
               onSelectAllChange={(checked) =>
                 handleSelectAllChange(activeKeys, checked)
               }
-              dictionary={dictionary}
             />
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="inactive-keys">
           <AccordionTrigger>
-            {dictionary.inactiveKeys.replace(
+            {dict.inactiveKeys.replace(
               "{count}",
               inactiveKeys.length.toString()
             )}
@@ -170,7 +169,6 @@ export function KeyList({ keys, dictionary }: KeyListProps) {
               onSelectAllChange={(checked) =>
                 handleSelectAllChange(inactiveKeys, checked)
               }
-              dictionary={dictionary}
             />
           </AccordionContent>
         </AccordionItem>

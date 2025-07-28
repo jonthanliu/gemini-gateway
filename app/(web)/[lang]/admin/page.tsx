@@ -38,7 +38,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
 
   // If there are no keys, the user must be guided to add their first key.
   if (!hasKeys) {
-    return <Onboarding dictionary={dictionary.admin} />;
+    return <Onboarding />;
   }
 
   // If the user is logged in and keys exist, show the main dashboard.

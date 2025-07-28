@@ -9,25 +9,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { KeyForm } from "./KeyForm";
 
-interface AddKeyDialogProps {
-  dictionary: Dictionary["admin"]["addKeyDialog"];
-}
+export function AddKeyDialog() {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.addKeyDialog;
 
-export function AddKeyDialog({ dictionary }: AddKeyDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>{dictionary.addButton}</Button>
+        <Button>{dict.addButton}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{dictionary.title}</DialogTitle>
-          <DialogDescription>{dictionary.description}</DialogDescription>
+          <DialogTitle>{dict.title}</DialogTitle>
+          <DialogDescription>{dict.description}</DialogDescription>
         </DialogHeader>
-        <KeyForm dictionary={dictionary.keyForm} />
+        <KeyForm />
       </DialogContent>
     </Dialog>
   );

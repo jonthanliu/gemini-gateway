@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { Log } from "@/lib/services/log.service";
 import { formatApiKey } from "@/lib/utils";
 import { Eye } from "lucide-react";
@@ -23,7 +22,6 @@ interface LogTableProps {
   onLogSelectionChange: (logId: number, isSelected: boolean) => void;
   onSelectAllLogsChange: (allSelected: boolean) => void;
   onViewLog: (log: Log) => void;
-  dictionary: Dictionary["admin"]["logs"];
 }
 
 export function LogTable({
@@ -33,8 +31,9 @@ export function LogTable({
   onLogSelectionChange,
   onSelectAllLogsChange,
   onViewLog,
-  dictionary,
 }: LogTableProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.logs;
   const areAllLogsSelected =
     logs.length > 0 && selectedLogIds.size === logs.length;
 
@@ -76,24 +75,22 @@ export function LogTable({
                 }
               />
             </TableHead>
-            <TableHead>{dictionary.columns.timestamp}</TableHead>
+            <TableHead>{dict.columns.timestamp}</TableHead>
             {logType === "request" ? (
               <>
-                <TableHead>{dictionary.columns.apiKey}</TableHead>
-                <TableHead>{dictionary.columns.model}</TableHead>
-                <TableHead>{dictionary.columns.status}</TableHead>
-                <TableHead>{dictionary.columns.latency}</TableHead>
+                <TableHead>{dict.columns.apiKey}</TableHead>
+                <TableHead>{dict.columns.model}</TableHead>
+                <TableHead>{dict.columns.status}</TableHead>
+                <TableHead>{dict.columns.latency}</TableHead>
               </>
             ) : (
               <>
-                <TableHead>{dictionary.columns.apiKey}</TableHead>
-                <TableHead>{dictionary.columns.errorType}</TableHead>
-                <TableHead>{dictionary.columns.errorMessage}</TableHead>
+                <TableHead>{dict.columns.apiKey}</TableHead>
+                <TableHead>{dict.columns.errorType}</TableHead>
+                <TableHead>{dict.columns.errorMessage}</TableHead>
               </>
             )}
-            <TableHead className="text-right">
-              {dictionary.columns.actions}
-            </TableHead>
+            <TableHead className="text-right">{dict.columns.actions}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -10,15 +10,11 @@
 
 import { checkAuthState } from "@/lib/auth/web_auth";
 import { Topbar } from "./components/Topbar";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { Locale } from "@/i18n-config";
 
 export default async function AdminLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: { lang: Locale };
 }) {
   // 1. Critical configuration check.
   if (!process.env.AUTH_TOKEN) {
@@ -28,16 +24,14 @@ export default async function AdminLayout({
   }
 
   // 2. Check user authentication status.
-  const { lang } = await params;
   const isLoggedIn = await checkAuthState();
-  const dictionary = await getDictionary(lang);
 
   // 3. Conditionally render the layout.
   return (
     <div>
       {isLoggedIn ? (
         <div className="flex min-h-screen w-full flex-col">
-          <Topbar dictionary={dictionary.admin} />
+          <Topbar />
           <main className="flex flex-1 flex-col gap-4 bg-muted/40 p-4 md:gap-8 md:p-10">
             <div className="mx-auto grid w-full max-w-6xl items-start gap-6">
               <div className="grid gap-6">{children}</div>

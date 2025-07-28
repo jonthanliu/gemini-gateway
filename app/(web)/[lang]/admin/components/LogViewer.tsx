@@ -10,7 +10,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { Log } from "@/lib/services/log.service";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -24,14 +24,11 @@ import { LogTable } from "./LogTable";
 interface LogViewerProps {
   initialLogs: Log[];
   initialTotal: number;
-  dictionary: Dictionary["admin"]["logs"];
 }
 
-export function LogViewer({
-  initialLogs,
-  initialTotal,
-  dictionary,
-}: LogViewerProps) {
+export function LogViewer({ initialLogs, initialTotal }: LogViewerProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.logs;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -56,13 +53,10 @@ export function LogViewer({
   };
 
   const handleClearLogs = () => {
-    const confirmMessage = dictionary.clearConfirmation.replace(
-      "{logType}",
-      logType
-    );
+    const confirmMessage = dict.clearConfirmation.replace("{logType}", logType);
     toast(confirmMessage, {
       action: {
-        label: dictionary.confirm,
+        label: dict.confirm,
         onClick: () => {
           startTransition(async () => {
             const result = await clearAllLogsAction(logType);
@@ -92,13 +86,13 @@ export function LogViewer({
   };
 
   const handleBulkDelete = () => {
-    const confirmMessage = dictionary.bulkDeleteConfirmation.replace(
+    const confirmMessage = dict.bulkDeleteConfirmation.replace(
       "{count}",
       selectedLogIds.size.toString()
     );
     toast(confirmMessage, {
       action: {
-        label: dictionary.confirm,
+        label: dict.confirm,
         onClick: () => {
           startTransition(async () => {
             const result = await deleteLogsAction(
@@ -153,8 +147,8 @@ export function LogViewer({
       <div className="flex justify-between items-center">
         <Tabs value={logType} onValueChange={handleTabChange}>
           <TabsList>
-            <TabsTrigger value="request">{dictionary.tabs.request}</TabsTrigger>
-            <TabsTrigger value="error">{dictionary.tabs.error}</TabsTrigger>
+            <TabsTrigger value="request">{dict.tabs.request}</TabsTrigger>
+            <TabsTrigger value="error">{dict.tabs.error}</TabsTrigger>
           </TabsList>
         </Tabs>
         <Button
@@ -163,19 +157,18 @@ export function LogViewer({
           disabled={isPending}
         >
           {isPending
-            ? dictionary.clearing
-            : `${dictionary.clearAll} ${logType} ${dictionary.logs}`}
+            ? dict.clearing
+            : `${dict.clearAll} ${logType} ${dict.logs}`}
         </Button>
       </div>
 
-      <FilterBar dictionary={dictionary.filters} />
+      <FilterBar />
 
       {selectedLogIds.size > 0 && (
         <BulkActionToolbar
           selectedCount={selectedLogIds.size}
           onBulkDelete={handleBulkDelete}
           isPending={isPending}
-          dictionary={dictionary}
         />
       )}
 
@@ -186,7 +179,6 @@ export function LogViewer({
         onLogSelectionChange={handleLogSelectionChange}
         onSelectAllLogsChange={handleSelectAllLogsChange}
         onViewLog={setViewingLog}
-        dictionary={dictionary}
       />
 
       <Pagination>
@@ -234,11 +226,7 @@ export function LogViewer({
         </PaginationContent>
       </Pagination>
 
-      <LogDetailsDialog
-        viewingLog={viewingLog}
-        setViewingLog={setViewingLog}
-        dictionary={dictionary.details}
-      />
+      <LogDetailsDialog viewingLog={viewingLog} setViewingLog={setViewingLog} />
     </div>
   );
 }

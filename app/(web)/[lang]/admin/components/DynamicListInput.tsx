@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,21 +11,21 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { Wand2, X } from "lucide-react";
 import { useState } from "react";
 
 interface DynamicListInputProps {
   value: string[]; // Changed to string array for better type safety
   onChange: (newValue: string[]) => void;
-  dictionary: Dictionary["admin"]["config"]["form"]["dynamicList"];
 }
 
 export function DynamicListInput({
   value: items = [], // Default to empty array if value is not provided
   onChange,
-  dictionary,
 }: DynamicListInputProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.config.form.dynamicList;
   const [newItem, setNewItem] = useState("");
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
@@ -64,43 +63,43 @@ export function DynamicListInput({
         <Input
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
-          placeholder={dictionary.placeholder}
+          placeholder={dict.placeholder}
           onKeyDown={(e) =>
             e.key === "Enter" && (e.preventDefault(), handleAddItem())
           }
         />
         <Button onClick={handleAddItem} type="button">
-          {dictionary.add}
+          {dict.add}
         </Button>
         <Button
           onClick={handleGenerateAndAddItem}
           type="button"
           variant="outline"
           size="icon"
-          title={dictionary.generateTitle}
+          title={dict.generateTitle}
         >
           <Wand2 className="h-4 w-4" />
-          <span className="sr-only">{dictionary.generateAria}</span>
+          <span className="sr-only">{dict.generateAria}</span>
         </Button>
         <Dialog open={isBulkAddOpen} onOpenChange={setIsBulkAddOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" type="button">
-              {dictionary.bulkAdd}
+              {dict.bulkAdd}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{dictionary.bulkAddTitle}</DialogTitle>
+              <DialogTitle>{dict.bulkAddTitle}</DialogTitle>
             </DialogHeader>
             <Textarea
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
-              placeholder={dictionary.bulkPlaceholder}
+              placeholder={dict.bulkPlaceholder}
               rows={10}
             />
             <DialogFooter>
               <Button onClick={handleBulkAdd} type="button">
-                {dictionary.bulkBtn}
+                {dict.bulkBtn}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -122,9 +121,7 @@ export function DynamicListInput({
           </div>
         ))}
         {items.length === 0 && (
-          <p className="p-2 text-sm text-muted-foreground">
-            {dictionary.noItems}
-          </p>
+          <p className="p-2 text-sm text-muted-foreground">{dict.noItems}</p>
         )}
       </div>
     </div>

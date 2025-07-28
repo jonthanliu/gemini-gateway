@@ -1,19 +1,17 @@
 "use client";
 
-import { Dictionary } from "@/lib/i18n/dictionaries";
-import { usePathname } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Link from "next/link";
-import { logoutAction } from "../actions/logout.action";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { logoutAction } from "../actions/logout.action";
 
-interface TopbarProps {
-  dictionary: Dictionary["admin"];
-}
-
-export function Topbar({ dictionary }: TopbarProps) {
+export function Topbar() {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin;
   const pathname = usePathname();
   const lang = pathname.split("/")[1];
 
@@ -25,22 +23,20 @@ export function Topbar({ dictionary }: TopbarProps) {
 
   return (
     <header className="sticky top-0 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
-      <h1 className="text-xl font-semibold">{dictionary.topbar.title}</h1>
+      <h1 className="text-xl font-semibold">{dict.topbar.title}</h1>
       <div className="flex-1 flex justify-center">
         <Tabs value={getCurrentTab()} className="w-auto">
           <TabsList>
             <Link href={`/${lang}/admin`} passHref>
               <TabsTrigger value="dashboard">
-                {dictionary.topbar.nav.dashboard}
+                {dict.topbar.nav.dashboard}
               </TabsTrigger>
             </Link>
             <Link href={`/${lang}/admin/config`} passHref>
-              <TabsTrigger value="config">
-                {dictionary.topbar.nav.config}
-              </TabsTrigger>
+              <TabsTrigger value="config">{dict.topbar.nav.config}</TabsTrigger>
             </Link>
             <Link href={`/${lang}/admin/logs`} passHref>
-              <TabsTrigger value="logs">{dictionary.topbar.nav.logs}</TabsTrigger>
+              <TabsTrigger value="logs">{dict.topbar.nav.logs}</TabsTrigger>
             </Link>
           </TabsList>
         </Tabs>
@@ -50,7 +46,7 @@ export function Topbar({ dictionary }: TopbarProps) {
         <form action={logoutAction}>
           <Button variant="outline" size="icon" type="submit">
             <LogOut className="h-[1.2rem] w-[1.2rem]" />
-            <span className="sr-only">{dictionary.topbar.logout}</span>
+            <span className="sr-only">{dict.topbar.logout}</span>
           </Button>
         </form>
       </div>

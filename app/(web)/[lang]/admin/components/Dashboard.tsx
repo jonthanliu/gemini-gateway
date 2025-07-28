@@ -46,11 +46,7 @@ export async function Dashboard({ dictionary }: DashboardProps) {
       <h1 className="text-2xl font-semibold">{dictionary.dashboard.title}</h1>
 
       {/* Display high-level statistics for both keys and system calls */}
-      <DashboardStats
-        keyStats={keyStats}
-        systemStats={systemStats}
-        dictionary={dictionary}
-      />
+      <DashboardStats keyStats={keyStats} systemStats={systemStats} />
 
       {/* Card container for the API key list and actions */}
       <Card>
@@ -59,10 +55,10 @@ export async function Dashboard({ dictionary }: DashboardProps) {
             <CardTitle>{dictionary.keys.title}</CardTitle>
             <CardDescription>{dictionary.keys.description}</CardDescription>
           </div>
-          <AddKeyDialog dictionary={dictionary.addKeyDialog} />
+          <AddKeyDialog />
         </CardHeader>
         <CardContent>
-          <KeyList keys={keys} dictionary={dictionary.keys.table} />
+          <KeyList keys={keys} />
         </CardContent>
       </Card>
     </div>

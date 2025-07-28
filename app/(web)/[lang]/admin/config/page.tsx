@@ -43,10 +43,7 @@ export default async function ConfigPage({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ConfigForm
-          settings={settings}
-          dictionary={dictionary.admin.config.form}
-        />
+        <ConfigForm settings={settings} />
       </CardContent>
     </Card>
   );

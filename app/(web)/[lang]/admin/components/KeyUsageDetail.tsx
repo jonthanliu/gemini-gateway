@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dictionary } from "@/lib/i18n/dictionaries";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import { useEffect, useState } from "react";
 import {
   getKeyUsageDetailsAction,
@@ -31,10 +31,11 @@ import {
 
 interface KeyUsageDetailProps {
   apiKey: string;
-  dictionary: Dictionary["admin"]["keys"]["table"]["usage"];
 }
 
-export function KeyUsageDetail({ apiKey, dictionary }: KeyUsageDetailProps) {
+export function KeyUsageDetail({ apiKey }: KeyUsageDetailProps) {
+  const dictionary = useDictionary();
+  const dict = dictionary.admin.keys.table.usage;
   const [details, setDetails] = useState<KeyUsageDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,52 +53,50 @@ export function KeyUsageDetail({ apiKey, dictionary }: KeyUsageDetailProps) {
         }
       })
       .catch((e) => {
-        setError(e.message || dictionary.error);
+        setError(e.message || dict.error);
       })
       .finally(() => setLoading(false));
-  }, [apiKey, dictionary.error]);
+  }, [apiKey, dict.error]);
 
-  if (loading) return <p>{dictionary.loading}</p>;
+  if (loading) return <p>{dict.loading}</p>;
   if (error) return <p className="text-red-500">{error}</p>;
-  if (!details) return <p>{dictionary.noDetails}</p>;
+  if (!details) return <p>{dict.noDetails}</p>;
 
   return (
     <div>
       <div className="mb-4 grid grid-cols-3 gap-4 text-center">
         <div>
           <p className="text-xl font-bold">{details.stats.total}</p>
-          <p className="text-sm text-muted-foreground">
-            {dictionary.totalCalls}
-          </p>
+          <p className="text-sm text-muted-foreground">{dict.totalCalls}</p>
         </div>
         <div>
           <p className="text-xl font-bold text-green-600">
             {details.stats.success}
           </p>
-          <p className="text-sm text-muted-foreground">{dictionary.success}</p>
+          <p className="text-sm text-muted-foreground">{dict.success}</p>
         </div>
         <div>
           <p className="text-xl font-bold text-red-600">
             {details.stats.failed}
           </p>
-          <p className="text-sm text-muted-foreground">{dictionary.failed}</p>
+          <p className="text-sm text-muted-foreground">{dict.failed}</p>
         </div>
       </div>
-      <h4 className="mb-2 font-semibold">{dictionary.recentLogs}</h4>
+      <h4 className="mb-2 font-semibold">{dict.recentLogs}</h4>
       <div className="max-h-80 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{dictionary.time}</TableHead>
-              <TableHead>{dictionary.model}</TableHead>
-              <TableHead>{dictionary.status}</TableHead>
+              <TableHead>{dict.time}</TableHead>
+              <TableHead>{dict.model}</TableHead>
+              <TableHead>{dict.status}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {details.logs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center">
-                  {dictionary.noLogs}
+                  {dict.noLogs}
                 </TableCell>
               </TableRow>
             ) : (
@@ -109,12 +108,10 @@ export function KeyUsageDetail({ apiKey, dictionary }: KeyUsageDetailProps) {
                   <TableCell>{log.model}</TableCell>
                   <TableCell>
                     {log.isSuccess ? (
-                      <span className="text-green-600">
-                        {dictionary.success}
-                      </span>
+                      <span className="text-green-600">{dict.success}</span>
                     ) : (
                       <span className="text-red-600">
-                        {dictionary.failed} ({log.statusCode})
+                        {dict.failed} ({log.statusCode})
                       </span>
                     )}
                   </TableCell>
