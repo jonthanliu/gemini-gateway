@@ -14,6 +14,13 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 # 3. Builder Stage
 FROM base AS builder
 WORKDIR /app
+
+# Accept WEB_JWT_SECRET as a build argument
+ARG WEB_JWT_SECRET
+ARG AUTH_TOKEN
+ARG ALLOWED_TOKENS
+ENV WEB_JWT_SECRET=${WEB_JWT_SECRET} AUTH_TOKEN=${AUTH_TOKEN} ALLOWED_TOKENS=${ALLOWED_TOKENS}
+
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 ENV DATABASE_URL="file:./build-time.db"

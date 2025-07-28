@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - WEB_JWT_SECRET=${WEB_JWT_SECRET}
     ports:
       - "3000:3000"
     volumes:
