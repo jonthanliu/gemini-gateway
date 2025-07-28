@@ -83,10 +83,24 @@ export async function* streamGeminiToOpenAI(
   modelName: string
 ): AsyncGenerator<string> {
   const streamId = `chatcmpl-${Date.now()}`;
+  let firstChunk = true;
 
   for await (const chunk of geminiStream) {
+    // Check if the first chunk is a complete response
+    if (
+      firstChunk &&
+      chunk.response.candidates &&
+      chunk.response.candidates?.[0]?.finishReason
+    ) {
+      const openAIResponse = transformGeminiResponseToOpenAI(chunk, modelName);
+      yield `data: ${JSON.stringify(openAIResponse)}\n\n`;
+      yield `data: [DONE]\n\n`;
+      return;
+    }
+    firstChunk = false;
+
     const content =
-      chunk.response.candidates?.[0]?.content?.parts[0]?.text || "";
+      chunk.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (content) {
       const delta = {
         id: streamId,

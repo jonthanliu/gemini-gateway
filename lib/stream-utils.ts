@@ -1,22 +1,33 @@
 import { GenerateContentResult } from "@google/generative-ai";
 
-export async function* streamToAsyncIterable(stream: ReadableStream<Uint8Array>): AsyncIterable<GenerateContentResult> {
+export async function* streamToAsyncIterable(
+  stream: ReadableStream<Uint8Array>
+): AsyncIterable<GenerateContentResult> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
+  let buffer = "";
+
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
+        if (buffer.trim().length > 0) {
+          try {
+            const jsonArray = JSON.parse(buffer);
+            for (const item of jsonArray) {
+              yield { response: item };
+            }
+          } catch (e) {
+            console.error(
+              "Failed to parse final stream content:",
+              (e as Error).message,
+              buffer
+            );
+          }
+        }
         return;
       }
-      const text = decoder.decode(value);
-      // This is a simplified assumption. Real implementation may need to handle chunking correctly for multiple JSON objects in one chunk.
-      try {
-        const parsed = JSON.parse(text); 
-        yield { response: parsed };
-      } catch {
-        console.error("Failed to parse stream chunk:", text);
-      }
+      buffer += decoder.decode(value, { stream: true });
     }
   } finally {
     reader.releaseLock();
@@ -33,7 +44,7 @@ export function iteratorToStream(
       if (done) {
         controller.close();
       } else {
-        const chunk = typeof value === 'string' ? value : JSON.stringify(value);
+        const chunk = typeof value === "string" ? value : JSON.stringify(value);
         controller.enqueue(encoder.encode(chunk));
       }
     },
