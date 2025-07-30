@@ -68,7 +68,11 @@ export const modelMappings = sqliteTable("model_mappings", {
   target_provider: text("target_provider", { enum: ["gemini"] })
     .default("gemini")
     .notNull(), // For future expansion
-  target_endpoint: text("target_endpoint").notNull(), // e.g., "v1beta/models/{model}:streamGenerateContent"
+  target_method: text("target_method", {
+    enum: ["generateContent", "streamGenerateContent"],
+  })
+    .default("generateContent")
+    .notNull(),
 
   capabilities: text("capabilities", { mode: "json" }).$type<{
     vision: boolean;

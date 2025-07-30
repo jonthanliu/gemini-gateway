@@ -1,34 +1,41 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1753494531632,
-      "tag": "0000_silent_silver_surfer",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1753575756127,
-      "tag": "0001_narrow_proteus",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1753575825239,
-      "tag": "0002_exotic_living_lightning",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1753845710388,
-      "tag": "0003_strange_black_bolt",
-      "breakpoints": true
-    }
-  ]
+    "version": "7",
+    "dialect": "sqlite",
+    "entries": [
+        {
+            "idx": 0,
+            "version": "6",
+            "when": 1753494531632,
+            "tag": "0000_silent_silver_surfer",
+            "breakpoints": true
+        },
+        {
+            "idx": 1,
+            "version": "6",
+            "when": 1753575756127,
+            "tag": "0001_narrow_proteus",
+            "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "6",
+            "when": 1753575825239,
+            "tag": "0002_exotic_living_lightning",
+            "breakpoints": true
+        },
+        {
+            "idx": 3,
+            "version": "6",
+            "when": 1753845710388,
+            "tag": "0003_strange_black_bolt",
+            "breakpoints": true
+        },
+        {
+            "idx": 4,
+            "version": "6",
+            "when": 1753872731000,
+            "tag": "0004_seed_default_mappings",
+            "breakpoints": true
+        }
+    ]
 }

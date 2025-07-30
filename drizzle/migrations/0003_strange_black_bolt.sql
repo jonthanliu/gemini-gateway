@@ -5,7 +5,7 @@ CREATE TABLE `model_mappings` (
 	`priority` integer DEFAULT 0 NOT NULL,
 	`target_name` text NOT NULL,
 	`target_provider` text DEFAULT 'gemini' NOT NULL,
-	`target_endpoint` text NOT NULL,
+	`target_method` text DEFAULT 'generateContent' NOT NULL,
 	`capabilities` text,
 	`constraints` text,
 	`created_at` integer DEFAULT (strftime('%s', 'now')),
