@@ -19,6 +19,7 @@ import {
 import { Dictionary } from "@/lib/i18n/dictionaries";
 import { getAllKeys, getSystemApiCallStats } from "@/lib/services/key.service";
 import { AddKeyDialog } from "./AddKeyDialog";
+import { AnalyticsDashboard } from "./AnalyticsDashboard";
 import { DashboardStats } from "./DashboardStats";
 import { KeyList } from "./KeyList";
 
@@ -47,6 +48,9 @@ export async function Dashboard({ dictionary }: DashboardProps) {
 
       {/* Display high-level statistics for both keys and system calls */}
       <DashboardStats keyStats={keyStats} systemStats={systemStats} />
+
+      {/* Display detailed analytics charts and tables */}
+      <AnalyticsDashboard />
 
       {/* Card container for the API key list and actions */}
       <Card>
