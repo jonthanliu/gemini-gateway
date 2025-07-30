@@ -1,58 +1,36 @@
 import {
-  transformOpenAIRequestToGemini,
+  transformRequest,
+  transformResponse,
+  transformStream,
 } from "@/lib/adapters/openai-to-gemini";
-import {
-  streamGeminiToOpenAI,
-  transformGeminiResponseToOpenAI,
-} from "@/lib/adapters/gemini-to-openai";
 import { geminiClient } from "@/lib/core/gemini-client";
 import logger from "@/lib/logger";
-import { iteratorToStream, streamToAsyncIterable } from "@/lib/stream-utils";
+import { iteratorToStream } from "@/lib/stream-utils";
+import { OpenAIChatCompletionRequest } from "@/lib/types/openai-types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const openaiRequest = await req.json();
+    const openaiRequest = (await req.json()) as OpenAIChatCompletionRequest;
 
     const modelMap: Record<string, string> = {
-      "gpt-3.5-turbo": "gemini-1.5-flash",
-      "gpt-4": "gemini-1.5-pro",
-      "gpt-4-turbo": "gemini-1.5-pro",
-      "gpt-4o": "gemini-1.5-pro",
+      "gpt-3.5-turbo": "gemini-2.5-flash",
+      "gpt-4": "gemini-2.5-pro",
+      "gpt-4-turbo": "gemini-2.5-pro",
+      "gpt-4o": "gemini-2.5-pro",
     };
     const requestedOpenAIModel = openaiRequest.model || "gpt-3.5-turbo";
     const geminiModelName =
-      modelMap[requestedOpenAIModel] || "gemini-1.5-flash";
+      modelMap[requestedOpenAIModel] || "gemini-2.5-flash";
 
-    const geminiRequest = transformOpenAIRequestToGemini(openaiRequest);
-
-    const geminiResponse = await geminiClient.generateContent(
-      geminiModelName,
-      geminiRequest,
-      openaiRequest.stream
-    );
-
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      logger.error(
-        { status: geminiResponse.status, errorBody },
-        "[OpenAI Bridge] Gemini API returned an error"
-      );
-      return new NextResponse(errorBody, {
-        status: geminiResponse.status,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const geminiRequest = transformRequest(openaiRequest);
 
     if (openaiRequest.stream) {
-      if (!geminiResponse.body) {
-        throw new Error("Stream response from Gemini is empty.");
-      }
-      const adaptedStream = streamToAsyncIterable(geminiResponse.body);
-      const openaiStream = await streamGeminiToOpenAI(
-        adaptedStream,
-        geminiModelName
+      const geminiStream = await geminiClient.streamGenerateContent(
+        geminiModelName,
+        geminiRequest
       );
+      const openaiStream = transformStream(geminiStream, geminiModelName);
       const readableStream = iteratorToStream(openaiStream);
 
       return new NextResponse(readableStream, {
@@ -64,11 +42,11 @@ export async function POST(req: NextRequest) {
         },
       });
     } else {
-      const geminiJson = await geminiResponse.json();
-      const openaiResponse = transformGeminiResponseToOpenAI(
-        geminiJson,
-        geminiModelName
+      const geminiResult = await geminiClient.generateContent(
+        geminiModelName,
+        geminiRequest
       );
+      const openaiResponse = transformResponse(geminiResult, geminiModelName);
       return NextResponse.json(openaiResponse, { status: 200 });
     }
   } catch (error) {
