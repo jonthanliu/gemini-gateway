@@ -1,25 +1,33 @@
 import type * as Anthropic from "@anthropic-ai/sdk/resources/messages";
-import type * as Gemini from "@google/generative-ai";
 import {
+  FunctionDeclarationSchema,
+  GenerateContentRequest,
+  GenerateContentResult,
+  Part,
   SchemaType,
-  type FunctionDeclarationSchema,
 } from "@google/generative-ai";
 
-/**
- * Recursively removes the 'additionalProperties' key from a JSON schema object.
- * Gemini API rejects schemas that contain this key.
- * @param schema The schema object to clean.
- * @returns A new schema object without 'additionalProperties'.
- */
+// --- Anthropic Response Types ---
+interface AnthropicMessage {
+  id: string;
+  type: "message";
+  role: "assistant";
+  content: (
+    | { type: "text"; text: string }
+    | { type: "tool_use"; id: string; name: string; input: unknown }
+  )[];
+  model: string;
+  stop_reason: "end_turn" | "tool_use" | "stop_sequence" | "max_tokens";
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+// --- Helper Functions ---
 function cleanSchema<T>(schema: T): T {
-  if (typeof schema !== "object" || schema === null) {
-    return schema;
-  }
-
-  if (Array.isArray(schema)) {
-    return schema.map(cleanSchema) as T;
-  }
-
+  if (typeof schema !== "object" || schema === null) return schema;
+  if (Array.isArray(schema)) return schema.map(cleanSchema) as T;
   const newSchema: Record<string, unknown> = {};
   for (const key in schema) {
     if (Object.prototype.hasOwnProperty.call(schema, key)) {
@@ -28,35 +36,25 @@ function cleanSchema<T>(schema: T): T {
       }
     }
   }
-
-  // Gemini only supports 'enum' and 'date-time' for string formats.
-  // Remove any other format specifiers to avoid validation errors.
   if (newSchema.type === "string" && newSchema.format) {
     const allowedFormats = ["enum", "date-time"];
     if (!allowedFormats.includes(newSchema.format as string)) {
       delete newSchema.format;
     }
   }
-
   return newSchema as T;
 }
 
-/**
- * Converts an Anthropic MessageCreateParams object to a Gemini GenerateContentRequest object.
- *
- * @param request The Anthropic request object.
- * @returns The converted Gemini request object.
- */
-export function convertAnthropicToGemini(
+// --- Standardized Adapter Functions ---
+export function transformRequest(
   request: Anthropic.MessageCreateParams
-): Gemini.GenerateContentRequest {
-  const geminiRequest: Gemini.GenerateContentRequest = {
+): GenerateContentRequest {
+  const geminiRequest: GenerateContentRequest = {
     contents: [],
     generationConfig: {},
     tools: [],
   };
 
-  // System Prompt
   if (request.system) {
     const systemText = Array.isArray(request.system)
       ? request.system.map((s) => s.text).join("\n")
@@ -67,11 +65,9 @@ export function convertAnthropicToGemini(
     };
   }
 
-  // Messages
   geminiRequest.contents = request.messages.map((msg) => {
     const role = msg.role === "assistant" ? "model" : "user";
-    const parts: Gemini.Part[] = [];
-
+    const parts: Part[] = [];
     if (Array.isArray(msg.content)) {
       for (const contentBlock of msg.content) {
         switch (contentBlock.type) {
@@ -99,30 +95,19 @@ export function convertAnthropicToGemini(
               },
             });
             break;
-          case "tool_use":
-            parts.push({
-              functionCall: {
-                name: contentBlock.name,
-                args: contentBlock.input as { [key: string]: unknown },
-              },
-            });
-            break;
         }
       }
     } else {
       parts.push({ text: msg.content });
     }
-
     return { role, parts };
   });
 
-  // Tools
   if (request.tools) {
     const functionDeclarations = request.tools
       .filter((tool): tool is Anthropic.Tool => "input_schema" in tool)
       .map((tool) => {
         const cleanedProperties = cleanSchema(tool.input_schema.properties);
-
         return {
           name: tool.name,
           description: tool.description,
@@ -133,28 +118,75 @@ export function convertAnthropicToGemini(
           } as FunctionDeclarationSchema,
         };
       });
-
     if (functionDeclarations.length > 0) {
       geminiRequest.tools = [{ functionDeclarations }];
     }
   }
 
-  // Generation Config
-  if (request.max_tokens) {
+  if (request.max_tokens)
     geminiRequest.generationConfig!.maxOutputTokens = request.max_tokens;
-  }
-  if (request.temperature) {
+  if (request.temperature)
     geminiRequest.generationConfig!.temperature = request.temperature;
-  }
-  if (request.top_p) {
-    geminiRequest.generationConfig!.topP = request.top_p;
-  }
-  if (request.top_k) {
-    geminiRequest.generationConfig!.topK = request.top_k;
-  }
-  if (request.stop_sequences) {
+  if (request.top_p) geminiRequest.generationConfig!.topP = request.top_p;
+  if (request.top_k) geminiRequest.generationConfig!.topK = request.top_k;
+  if (request.stop_sequences)
     geminiRequest.generationConfig!.stopSequences = request.stop_sequences;
-  }
 
   return geminiRequest;
+}
+
+export function transformResponse(
+  geminiResult: GenerateContentResult,
+  model: string
+): AnthropicMessage {
+  const content: AnthropicMessage["content"] = [];
+  const geminiParts =
+    geminiResult.response.candidates?.[0]?.content?.parts || [];
+
+  for (const part of geminiParts) {
+    if (part.text) {
+      content.push({ type: "text", text: part.text });
+    } else if (part.functionCall) {
+      content.push({
+        type: "tool_use",
+        id: part.functionCall.name,
+        name: part.functionCall.name,
+        input: part.functionCall.args,
+      });
+    }
+  }
+
+  return {
+    id: `msg-${Date.now()}`,
+    type: "message",
+    role: "assistant",
+    content: content,
+    model: model,
+    stop_reason: "end_turn",
+    usage: {
+      input_tokens: geminiResult.response.usageMetadata?.promptTokenCount || 0,
+      output_tokens:
+        geminiResult.response.usageMetadata?.candidatesTokenCount || 0,
+    },
+  };
+}
+
+export async function* transformStream(
+  geminiStream: AsyncGenerator<GenerateContentResult>
+): AsyncGenerator<string> {
+  for await (const geminiChunk of geminiStream) {
+    const text =
+      geminiChunk.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (text) {
+      const anthropicChunk = {
+        type: "content_block_delta",
+        index: 0,
+        delta: {
+          type: "text_delta",
+          text: text,
+        },
+      };
+      yield `data: ${JSON.stringify(anthropicChunk)}\n\n`;
+    }
+  }
 }

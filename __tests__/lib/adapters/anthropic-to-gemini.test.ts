@@ -1,8 +1,8 @@
-import { convertAnthropicToGemini } from "@/lib/adapters/anthropic-to-gemini";
+import { transformRequest } from "@/lib/adapters/anthropic-to-gemini";
 import type * as Anthropic from "@anthropic-ai/sdk/resources/messages";
 import { describe, expect, it } from "vitest";
 
-describe("convertAnthropicToGemini", () => {
+describe("Anthropic to Gemini Adapter", () => {
   it("should convert a simple text message", () => {
     const anthropicRequest: Anthropic.MessageCreateParams = {
       model: "claude-3-opus-20240229",
@@ -10,7 +10,7 @@ describe("convertAnthropicToGemini", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = convertAnthropicToGemini(anthropicRequest);
+    const geminiRequest = transformRequest(anthropicRequest);
 
     expect(geminiRequest.contents).toEqual([
       {
@@ -29,7 +29,7 @@ describe("convertAnthropicToGemini", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = convertAnthropicToGemini(anthropicRequest);
+    const geminiRequest = transformRequest(anthropicRequest);
 
     expect(geminiRequest.systemInstruction).toEqual({
       role: "user",
@@ -48,7 +48,7 @@ describe("convertAnthropicToGemini", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = convertAnthropicToGemini(anthropicRequest);
+    const geminiRequest = transformRequest(anthropicRequest);
 
     expect(geminiRequest.contents[0].role).toBe("user");
     expect(geminiRequest.contents[1].role).toBe("model");
@@ -76,7 +76,7 @@ describe("convertAnthropicToGemini", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = convertAnthropicToGemini(anthropicRequest);
+    const geminiRequest = transformRequest(anthropicRequest);
 
     expect(geminiRequest.contents[0].parts).toHaveLength(2);
     expect(geminiRequest.contents[0].parts).toContainEqual({
