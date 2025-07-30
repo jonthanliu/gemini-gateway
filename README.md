@@ -10,12 +10,13 @@ An intelligent AI gateway that supercharges your applications by providing a uni
 
 ## ✨ Key Features
 
-- **Unified API Interface**: Access Gemini models through multiple API formats, including **OpenAI**, **Anthropic**, and native **Gemini** protocols.
+- **Unified API Interface**: Access Gemini models through multiple API formats. Use standard model names like `gpt-4o` or `claude-3-opus`, and let the gateway handle the rest.
+- **Dynamic Model Routing**: Configure custom routing rules through the UI. Map any incoming model name (including wildcards like `gpt-4-*`) to a specific downstream Gemini model. Set priorities for wildcard matches.
 - **Smart Load Balancing**: Intelligently distributes requests across a pool of Gemini API keys to maximize throughput.
 - **Automatic Failover**: Automatically retries failed requests with the next available key, ensuring high availability.
-- **Persistent & Dynamic**: Manage API keys, authentication, and configurations on-the-fly through a web UI without service restarts.
+- **Persistent & Dynamic**: Manage API keys, model mappings, and configurations on-the-fly through a web UI without service restarts.
 - **Secure & Scalable**: Built with security in mind, ready for production deployment with Docker.
-- **Management Dashboard**: A sleek dashboard to monitor usage, manage keys, and configure the gateway in real-time.
+- **Management Dashboard**: A sleek dashboard to monitor usage, manage keys, and configure model routing rules in real-time.
 
 ## 🛠️ Tech Stack
 
@@ -155,7 +156,7 @@ For general-purpose clients like LobeChat or ChatGPT-Next-Web, you can use the O
     http://<your_domain_or_server_ip>:3000/openai/v1
     ```
 3.  Set the **API Key** to one of the tokens from your `ALLOWED_TOKENS` list.
-4.  Select a model name (e.g., `gemini-pro`) and start using it.
+4.  Select a model name that you have configured in the **Model Mappings** panel (e.g., `gpt-4o`). The gateway will automatically route the request to the appropriate Gemini model.
 
 ## ⚠️ Important Notes & Disclaimer
 
