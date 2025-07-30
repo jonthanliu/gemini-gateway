@@ -9,6 +9,7 @@
 - **UI**: [React](https://react.dev/) - 用于构建用户界面的 JavaScript 库。
 - **样式**: [Tailwind CSS](https://tailwindcss.com/) - 一个实用工具优先的 CSS 框架，用于快速构建自定义设计。
 - **UI 组件**: [shadcn/ui](https://ui.shadcn.com/) - 一套可重用的 UI 组件，可以轻松地复制和粘贴到你的应用中。
+- **图表**: [Recharts](https://recharts.org/) - 一个使用 React 和 D3 构建的组合式图表库，用于在管理界面中显示分析数据。
 - **国际化 (i18n)**: `next-intl` - 用于在 Next.js 应用中实现国际化。
 
 ## 开发环境

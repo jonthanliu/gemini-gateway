@@ -3,24 +3,32 @@
 ## 当前工作焦点
 
 - **任务**: 增强的日志和分析。
-- **状态**: 进行中。
+- **状态**: **已完成**。
 
 ## 近期变更
 
+- **增强的日志和分析**:
+  - **服务层 (`lib/services/stats.service.ts`)**:
+    - 扩展了服务，添加了 `getStatsByModel`, `getStatsByApiKey`, 和 `getDailyStats` 函数。
+    - 这些函数按不同维度（模型、API 密钥、日期）聚合请求日志，计算总请求数、成功率和平均延迟。
+    - 修复了在实现过程中出现的多个 TypeScript 类型错误，并确保了数据库查询的正确性（例如，使用 `sql` 辅助函数按日期进行分组）。
+  - **UI 组件 (`app/(web)/[lang]/admin/components/`)**:
+    - **引入 `recharts`**: 将 `recharts` 库添加到项目中，用于数据可视化。
+    - **创建 `AnalyticsDashboard.tsx`**: 这是一个新的客户端组件 (`"use client"`)，用于动态获取和显示分析数据。它包含：
+      - 一个按天显示调用历史的条形图。
+      - 一个按模型显示统计数据的表格。
+    - **更新 `Dashboard.tsx`**: 将新的 `AnalyticsDashboard` 组件集成到主仪表盘中，使其在核心统计数据下方呈现。
+    - **代码质量**: 根据 ESLint 的反馈，移除了 `AnalyticsDashboard.tsx` 中未使用的 `apiKeyStats` 变量，确保了代码的整洁性。
 - **模型映射重构**:
-  - **数据库**: 将 `model_mappings` 表中的 `target_endpoint` 字段重构为类型安全的 `target_method` 枚举 (`generateContent` | `streamGenerateContent`)。
-  - **UI**: 更新了管理界面的映射表单，使用下拉菜单选择 `target_method`。同时，在表格中禁止了删除 `__DEFAULT__` 规则，并在编辑表单中禁止了修改其名称。
-  - **API 路由**: 修改了 OpenAI 和 Anthropic 的 API 路由，使其流式/非流式行为完全由数据库中的 `target_method` 配置驱动。
-  - **版本控制**: 将所有相关的代码更改组织到三个独立的、有意义的 Git 提交中。
+  - **数据库**: 将 `model_mappings` 表中的 `target_endpoint` 字段重构为类型安全的 `target_method` 枚举。
+  - **UI**: 更新了管理界面的映射表单和表格，以反映和保护新的 `target_method` 字段和 `__DEFAULT__` 规则。
+  - **API 路由**: 更新了 API 路由，使其行为由数据库配置驱动。
 
 ## 下一步
 
-- **增强的日志和分析**:
-  - **目标**: 在管理仪表盘中提供更详细的 API 调用统计和分析图表。
-  - **初步计划**:
-    1.  分析现有日志数据结构 (`requestLogs`)，确定可以聚合哪些指标（例如，按模型、按密钥、按时间段的调用次数、成功率、平均延迟）。
-    2.  设计新的数据库查询或服务层方法来聚合这些统计数据。
-    3.  规划新的 UI 组件来展示这些图表（可能会使用一个图表库）。
+- **任务**: 暂无。等待下一个任务分配。
+
+## 重要模式和偏好
 
 ## 重要模式和偏好
 
