@@ -1,7 +1,7 @@
 import type {
-  GenerateContentRequest,
-  GenerateContentResult,
-} from "@google/generative-ai";
+  GenerateContentParameters,
+  GenerateContentResponse,
+} from "@google/genai";
 
 /**
  * Transforms a native Gemini request body for the GeminiClient.
@@ -10,15 +10,15 @@ import type {
  * request body that is already 100% compliant with the @google/generative-ai SDK.
  * The sole purpose of this gateway for the Gemini protocol is key management.
  *
- * @param _model - The model name (unused).
+ * @param model - The model name.
  * @param requestBody - The raw request body from the client.
- * @returns A promise that resolves to the original request body.
+ * @returns A promise that resolves to the new request body including the model.
  */
 export function transformRequest(
-  _model: string,
-  requestBody: GenerateContentRequest
-): Promise<GenerateContentRequest> {
-  return Promise.resolve(requestBody);
+  model: string,
+  requestBody: GenerateContentParameters
+): Promise<GenerateContentParameters> {
+  return Promise.resolve({ ...requestBody, model });
 }
 
 /**
@@ -26,8 +26,8 @@ export function transformRequest(
  * This is a passthrough as no conversion is needed.
  */
 export function transformResponse(
-  geminiResult: GenerateContentResult
-): GenerateContentResult {
+  geminiResult: GenerateContentResponse
+): GenerateContentResponse {
   return geminiResult;
 }
 
@@ -36,9 +36,10 @@ export function transformResponse(
  * for the client, formatting each chunk as newline-delimited JSON.
  */
 export async function* transformStream(
-  geminiStream: AsyncGenerator<GenerateContentResult>
+  geminiStream: AsyncGenerator<GenerateContentResponse>
 ): AsyncGenerator<string> {
   for await (const chunk of geminiStream) {
-    yield `data: ${JSON.stringify(chunk.response)}\n\n`;
+    // The new SDK directly returns the response object in the stream.
+    yield `data: ${JSON.stringify(chunk)}\n\n`;
   }
 }

@@ -4,16 +4,17 @@ import {
   transformStream,
 } from "@/lib/adapters/gemini-to-gemini";
 import type {
-  GenerateContentRequest,
-  GenerateContentResult,
-} from "@google/generative-ai";
-import { FinishReason } from "@google/generative-ai";
+  GenerateContentParameters,
+  GenerateContentResponse,
+} from "@google/genai";
+import { FinishReason } from "@google/genai";
 import { describe, expect, it } from "vitest";
 
 describe("Gemini to Gemini Adapter", () => {
   describe("transformRequest", () => {
     it("should return the original request body", async () => {
-      const requestBody: GenerateContentRequest = {
+      const requestBody: GenerateContentParameters = {
+        model: "gemini-pro",
         contents: [{ role: "user", parts: [{ text: "Hello" }] }],
       };
       const result = await transformRequest("gemini-pro", requestBody);
@@ -23,26 +24,21 @@ describe("Gemini to Gemini Adapter", () => {
 
   describe("transformResponse", () => {
     it("should return the original Gemini result", () => {
-      const geminiResult: GenerateContentResult = {
-        response: {
-          text: () => "Hi there!",
-          functionCall: () => undefined,
-          functionCalls: () => undefined,
-          candidates: [
-            {
-              content: { role: "model", parts: [{ text: "Hi there!" }] },
-              finishReason: FinishReason.STOP,
-              index: 0,
-              safetyRatings: [],
-            },
-          ],
-          usageMetadata: {
-            promptTokenCount: 1,
-            candidatesTokenCount: 2,
-            totalTokenCount: 3,
+      const geminiResult: GenerateContentResponse = {
+        candidates: [
+          {
+            content: { role: "model", parts: [{ text: "Hi there!" }] },
+            finishReason: FinishReason.STOP,
+            index: 0,
+            safetyRatings: [],
           },
+        ],
+        usageMetadata: {
+          promptTokenCount: 1,
+          candidatesTokenCount: 2,
+          totalTokenCount: 3,
         },
-      };
+      } as unknown as GenerateContentResponse;
       const result = transformResponse(geminiResult);
       expect(result).toEqual(geminiResult);
     });
@@ -50,33 +46,23 @@ describe("Gemini to Gemini Adapter", () => {
 
   describe("transformStream", () => {
     it("should transform a Gemini stream into an SSE string stream", async () => {
-      async function* createMockStream(): AsyncGenerator<GenerateContentResult> {
+      async function* createMockStream(): AsyncGenerator<GenerateContentResponse> {
         yield {
-          response: {
-            text: () => "Hello",
-            functionCall: () => undefined,
-            functionCalls: () => undefined,
-            candidates: [
-              {
-                index: 0,
-                content: { role: "model", parts: [{ text: "Hello" }] },
-              },
-            ],
-          },
-        };
+          candidates: [
+            {
+              index: 0,
+              content: { role: "model", parts: [{ text: "Hello" }] },
+            },
+          ],
+        } as unknown as GenerateContentResponse;
         yield {
-          response: {
-            text: () => " World",
-            functionCall: () => undefined,
-            functionCalls: () => undefined,
-            candidates: [
-              {
-                index: 0,
-                content: { role: "model", parts: [{ text: " World" }] },
-              },
-            ],
-          },
-        };
+          candidates: [
+            {
+              index: 0,
+              content: { role: "model", parts: [{ text: " World" }] },
+            },
+          ],
+        } as unknown as GenerateContentResponse;
       }
 
       const geminiStream = createMockStream();

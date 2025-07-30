@@ -1,5 +1,6 @@
 import { transformRequest } from "@/lib/adapters/anthropic-to-gemini";
 import type * as Anthropic from "@anthropic-ai/sdk/resources/messages";
+import { Content } from "@google/genai";
 import { describe, expect, it } from "vitest";
 
 describe("Anthropic to Gemini Adapter", () => {
@@ -18,7 +19,7 @@ describe("Anthropic to Gemini Adapter", () => {
         parts: [{ text: "Hello, world!" }],
       },
     ]);
-    expect(geminiRequest.generationConfig?.maxOutputTokens).toBe(1024);
+    expect(geminiRequest.config?.maxOutputTokens).toBe(1024);
   });
 
   it("should handle a system prompt", () => {
@@ -31,7 +32,7 @@ describe("Anthropic to Gemini Adapter", () => {
 
     const geminiRequest = transformRequest(anthropicRequest);
 
-    expect(geminiRequest.systemInstruction).toEqual({
+    expect(geminiRequest.config?.systemInstruction).toEqual({
       role: "user",
       parts: [{ text: "You are a helpful assistant." }],
     });
@@ -50,8 +51,8 @@ describe("Anthropic to Gemini Adapter", () => {
 
     const geminiRequest = transformRequest(anthropicRequest);
 
-    expect(geminiRequest.contents[0].role).toBe("user");
-    expect(geminiRequest.contents[1].role).toBe("model");
+    expect((geminiRequest.contents as Content[])[0].role).toBe("user");
+    expect((geminiRequest.contents as Content[])[1].role).toBe("model");
   });
 
   it("should convert image content", () => {
@@ -78,14 +79,14 @@ describe("Anthropic to Gemini Adapter", () => {
 
     const geminiRequest = transformRequest(anthropicRequest);
 
-    expect(geminiRequest.contents[0].parts).toHaveLength(2);
-    expect(geminiRequest.contents[0].parts).toContainEqual({
+    expect((geminiRequest.contents as Content[])[0].parts).toHaveLength(2);
+    expect((geminiRequest.contents as Content[])[0].parts).toContainEqual({
       inlineData: {
         mimeType: "image/png",
         data: "iVBORw0KGgo...",
       },
     });
-    expect(geminiRequest.contents[0].parts).toContainEqual({
+    expect((geminiRequest.contents as Content[])[0].parts).toContainEqual({
       text: "What is in this image?",
     });
   });

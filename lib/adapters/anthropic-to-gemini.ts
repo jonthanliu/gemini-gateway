@@ -1,11 +1,11 @@
 import type * as Anthropic from "@anthropic-ai/sdk/resources/messages";
 import {
-  FunctionDeclarationSchema,
-  GenerateContentRequest,
-  GenerateContentResult,
+  GenerateContentParameters,
+  GenerateContentResponse,
   Part,
-  SchemaType,
-} from "@google/generative-ai";
+  Schema,
+  Type,
+} from "@google/genai";
 
 // --- Anthropic Response Types ---
 interface AnthropicMessage {
@@ -48,18 +48,18 @@ function cleanSchema<T>(schema: T): T {
 // --- Standardized Adapter Functions ---
 export function transformRequest(
   request: Anthropic.MessageCreateParams
-): GenerateContentRequest {
-  const geminiRequest: GenerateContentRequest = {
+): GenerateContentParameters {
+  const geminiRequest: GenerateContentParameters = {
+    model: request.model,
     contents: [],
-    generationConfig: {},
-    tools: [],
+    config: {},
   };
 
   if (request.system) {
     const systemText = Array.isArray(request.system)
       ? request.system.map((s) => s.text).join("\n")
       : request.system;
-    geminiRequest.systemInstruction = {
+    geminiRequest.config!.systemInstruction = {
       role: "user",
       parts: [{ text: systemText }],
     };
@@ -112,41 +112,40 @@ export function transformRequest(
           name: tool.name,
           description: tool.description,
           parameters: {
-            type: SchemaType.OBJECT,
+            type: Type.OBJECT,
             properties: cleanedProperties,
             required: tool.input_schema.required,
-          } as FunctionDeclarationSchema,
+          } as Schema,
         };
       });
     if (functionDeclarations.length > 0) {
-      geminiRequest.tools = [{ functionDeclarations }];
+      geminiRequest.config!.tools = [{ functionDeclarations }];
     }
   }
 
   if (request.max_tokens)
-    geminiRequest.generationConfig!.maxOutputTokens = request.max_tokens;
+    geminiRequest.config!.maxOutputTokens = request.max_tokens;
   if (request.temperature)
-    geminiRequest.generationConfig!.temperature = request.temperature;
-  if (request.top_p) geminiRequest.generationConfig!.topP = request.top_p;
-  if (request.top_k) geminiRequest.generationConfig!.topK = request.top_k;
+    geminiRequest.config!.temperature = request.temperature;
+  if (request.top_p) geminiRequest.config!.topP = request.top_p;
+  if (request.top_k) geminiRequest.config!.topK = request.top_k;
   if (request.stop_sequences)
-    geminiRequest.generationConfig!.stopSequences = request.stop_sequences;
+    geminiRequest.config!.stopSequences = request.stop_sequences;
 
   return geminiRequest;
 }
 
 export function transformResponse(
-  geminiResult: GenerateContentResult,
+  geminiResult: GenerateContentResponse,
   model: string
 ): AnthropicMessage {
   const content: AnthropicMessage["content"] = [];
-  const geminiParts =
-    geminiResult.response.candidates?.[0]?.content?.parts || [];
+  const geminiParts = geminiResult.candidates?.[0]?.content?.parts || [];
 
   for (const part of geminiParts) {
     if (part.text) {
       content.push({ type: "text", text: part.text });
-    } else if (part.functionCall) {
+    } else if (part.functionCall?.name) {
       content.push({
         type: "tool_use",
         id: part.functionCall.name,
@@ -164,19 +163,17 @@ export function transformResponse(
     model: model,
     stop_reason: "end_turn",
     usage: {
-      input_tokens: geminiResult.response.usageMetadata?.promptTokenCount || 0,
-      output_tokens:
-        geminiResult.response.usageMetadata?.candidatesTokenCount || 0,
+      input_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
+      output_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
     },
   };
 }
 
 export async function* transformStream(
-  geminiStream: AsyncGenerator<GenerateContentResult>
+  geminiStream: AsyncGenerator<GenerateContentResponse>
 ): AsyncGenerator<string> {
   for await (const geminiChunk of geminiStream) {
-    const text =
-      geminiChunk.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = geminiChunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (text) {
       const anthropicChunk = {
         type: "content_block_delta",

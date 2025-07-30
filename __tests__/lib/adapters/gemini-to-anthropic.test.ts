@@ -1,13 +1,10 @@
 import { streamGeminiToAnthropic } from "@/lib/adapters/gemini-to-anthropic";
-import {
-  FinishReason,
-  type GenerateContentResult,
-} from "@google/generative-ai";
+import { FinishReason, type GenerateContentResponse } from "@google/genai";
 import { describe, expect, it } from "vitest";
 
 async function* createMockGeminiStream(
-  chunks: GenerateContentResult[]
-): AsyncGenerator<GenerateContentResult> {
+  chunks: GenerateContentResponse[]
+): AsyncGenerator<GenerateContentResponse> {
   for (const chunk of chunks) {
     yield chunk;
   }
@@ -15,67 +12,52 @@ async function* createMockGeminiStream(
 
 describe("streamGeminiToAnthropic", () => {
   it("should correctly convert a Gemini stream to an Anthropic stream", async () => {
-    const mockGeminiChunks: GenerateContentResult[] = [
+    const mockGeminiChunks: GenerateContentResponse[] = [
       {
-        response: {
-          candidates: [
-            {
-              content: { parts: [{ text: "Hello" }], role: "model" },
-              index: 0,
-              finishReason: FinishReason.STOP,
-              safetyRatings: [],
-            },
-          ],
-          usageMetadata: {
-            candidatesTokenCount: 1,
-            promptTokenCount: 0,
-            totalTokenCount: 1,
+        candidates: [
+          {
+            content: { parts: [{ text: "Hello" }], role: "model" },
+            index: 0,
+            finishReason: FinishReason.STOP,
+            safetyRatings: [],
           },
-          text: () => "Hello",
-          functionCall: () => undefined,
-          functionCalls: () => undefined,
+        ],
+        usageMetadata: {
+          candidatesTokenCount: 1,
+          promptTokenCount: 0,
+          totalTokenCount: 1,
         },
-      },
+      } as unknown as GenerateContentResponse,
       {
-        response: {
-          candidates: [
-            {
-              content: { parts: [{ text: ", " }], role: "model" },
-              index: 0,
-              finishReason: FinishReason.STOP,
-              safetyRatings: [],
-            },
-          ],
-          usageMetadata: {
-            candidatesTokenCount: 1,
-            promptTokenCount: 0,
-            totalTokenCount: 1,
+        candidates: [
+          {
+            content: { parts: [{ text: ", " }], role: "model" },
+            index: 0,
+            finishReason: FinishReason.STOP,
+            safetyRatings: [],
           },
-          text: () => ", ",
-          functionCall: () => undefined,
-          functionCalls: () => undefined,
+        ],
+        usageMetadata: {
+          candidatesTokenCount: 1,
+          promptTokenCount: 0,
+          totalTokenCount: 1,
         },
-      },
+      } as unknown as GenerateContentResponse,
       {
-        response: {
-          candidates: [
-            {
-              content: { parts: [{ text: "world!" }], role: "model" },
-              index: 0,
-              finishReason: FinishReason.STOP,
-              safetyRatings: [],
-            },
-          ],
-          usageMetadata: {
-            candidatesTokenCount: 1,
-            promptTokenCount: 0,
-            totalTokenCount: 1,
+        candidates: [
+          {
+            content: { parts: [{ text: "world!" }], role: "model" },
+            index: 0,
+            finishReason: FinishReason.STOP,
+            safetyRatings: [],
           },
-          text: () => "world!",
-          functionCall: () => undefined,
-          functionCalls: () => undefined,
+        ],
+        usageMetadata: {
+          candidatesTokenCount: 1,
+          promptTokenCount: 0,
+          totalTokenCount: 1,
         },
-      },
+      } as unknown as GenerateContentResponse,
     ];
 
     const geminiStream = createMockGeminiStream(mockGeminiChunks);

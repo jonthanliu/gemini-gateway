@@ -1,8 +1,8 @@
-import {
+import type {
   Content,
-  GenerateContentRequest,
-  GenerateContentResult,
-} from "@google/generative-ai";
+  GenerateContentParameters,
+  GenerateContentResponse,
+} from "@google/genai";
 import {
   OpenAIChatCompletion,
   OpenAIChatCompletionRequest,
@@ -18,8 +18,9 @@ const roleMap: Record<string, string> = {
 };
 
 export function transformRequest(
+  model: string,
   openaiRequest: OpenAIChatCompletionRequest
-): GenerateContentRequest {
+): GenerateContentParameters {
   const geminiContents: Content[] = openaiRequest.messages.map(
     (message: OpenAIChatMessage) => ({
       role: roleMap[message.role],
@@ -36,31 +37,29 @@ export function transformRequest(
   if (openaiRequest.stop) generationConfig.stopSequences = openaiRequest.stop;
 
   return {
+    model,
     contents: geminiContents,
-    generationConfig,
+    config: generationConfig,
   };
 }
 
 export function transformResponse(
-  geminiResult: GenerateContentResult,
+  geminiResult: GenerateContentResponse,
   model: string
 ): OpenAIChatCompletion {
   const choice: OpenAICompletionChoice = {
     index: 0,
     message: {
       role: "assistant",
-      content:
-        geminiResult.response.candidates?.[0]?.content?.parts?.[0]?.text || "",
+      content: geminiResult.candidates?.[0]?.content?.parts?.[0]?.text || "",
     },
-    finish_reason:
-      geminiResult.response.candidates?.[0]?.finishReason || "stop",
+    finish_reason: geminiResult.candidates?.[0]?.finishReason || "stop",
   };
 
   const usage: OpenAIUsage = {
-    prompt_tokens: geminiResult.response.usageMetadata?.promptTokenCount || 0,
-    completion_tokens:
-      geminiResult.response.usageMetadata?.candidatesTokenCount || 0,
-    total_tokens: geminiResult.response.usageMetadata?.totalTokenCount || 0,
+    prompt_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
+    completion_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
+    total_tokens: geminiResult.usageMetadata?.totalTokenCount || 0,
   };
 
   return {
@@ -74,12 +73,11 @@ export function transformResponse(
 }
 
 export async function* transformStream(
-  geminiStream: AsyncGenerator<GenerateContentResult>,
+  geminiStream: AsyncGenerator<GenerateContentResponse>,
   model: string
 ): AsyncGenerator<string> {
   for await (const geminiChunk of geminiStream) {
-    const text =
-      geminiChunk.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = geminiChunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     const openAIChunk = {
       id: `chatcmpl-${Date.now()}`,
@@ -92,8 +90,7 @@ export async function* transformStream(
           delta: {
             content: text,
           },
-          finish_reason:
-            geminiChunk.response.candidates?.[0]?.finishReason || null,
+          finish_reason: geminiChunk.candidates?.[0]?.finishReason || null,
         },
       ],
     };

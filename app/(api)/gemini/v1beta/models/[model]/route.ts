@@ -39,7 +39,7 @@ async function handler(
 
       const responseStream = transformStream(geminiStream);
       const readableStream = iteratorToStream(responseStream);
-      console.log({ geminiStream, readableStream });
+      //   console.log({ geminiStream, readableStream });
       return new Response(readableStream, {
         headers: {
           "Content-Type": "text/event-stream; charset=utf-8",
@@ -52,7 +52,7 @@ async function handler(
         geminiRequest
       );
       const responseBody = transformResponse(geminiResult);
-      return NextResponse.json(responseBody.response);
+      return NextResponse.json(responseBody);
     }
   } catch (error) {
     if (error instanceof ServiceUnavailableError) {

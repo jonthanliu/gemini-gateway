@@ -1,5 +1,5 @@
 import logger from "@/lib/logger";
-import * as Gemini from "@google/generative-ai";
+import type { GenerateContentResponse } from "@google/genai";
 
 /**
  * Converts a Gemini API stream to an Anthropic-compatible SSE stream.
@@ -7,7 +7,7 @@ import * as Gemini from "@google/generative-ai";
  * @returns A ReadableStream in the Anthropic SSE format.
  */
 export function streamGeminiToAnthropic(
-  geminiStream: AsyncIterable<Gemini.GenerateContentResult>
+  geminiStream: AsyncIterable<GenerateContentResponse>
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   const messageId = `msg_${Date.now().toString(36)}`;
@@ -43,14 +43,14 @@ export function streamGeminiToAnthropic(
       let totalOutputTokens = 0;
       let finalStopReason = null;
 
-      let chunk: Gemini.GenerateContentResult | undefined;
+      let chunk: GenerateContentResponse | undefined;
       try {
         for await (chunk of geminiStream) {
-          const candidate = chunk.response.candidates?.[0];
+          const candidate = chunk.candidates?.[0];
           if (!candidate) continue;
 
           const chunkOutputTokens =
-            chunk.response.usageMetadata?.candidatesTokenCount || 0;
+            chunk.usageMetadata?.candidatesTokenCount || 0;
           totalOutputTokens += chunkOutputTokens;
 
           if (chunkOutputTokens > 0) {

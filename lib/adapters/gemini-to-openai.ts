@@ -1,18 +1,17 @@
-import { GenerateContentResult } from "@google/generative-ai";
+import type { GenerateContentResponse } from "@google/genai";
 
 /**
  * Transforms a Gemini GenerateContentResponse to an OpenAI chat completion object.
  * This is for non-streaming responses.
  */
 export function transformGeminiResponseToOpenAI(
-  geminiResponse: GenerateContentResult,
+  geminiResponse: GenerateContentResponse,
   modelName: string
 ) {
   const choice = {
     message: {
       role: "assistant",
-      content:
-        geminiResponse.response.candidates?.[0]?.content.parts[0].text || "",
+      content: geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || "",
     },
     finish_reason: "stop", // Simplified for now
     index: 0,
@@ -33,7 +32,7 @@ export function transformGeminiResponseToOpenAI(
  * server-sent event (SSE) stream.
  */
 export async function* streamGeminiToOpenAI(
-  geminiStream: AsyncIterable<GenerateContentResult>,
+  geminiStream: AsyncIterable<GenerateContentResponse>,
   modelName: string
 ): AsyncGenerator<string> {
   const streamId = `chatcmpl-${Date.now()}`;
@@ -41,11 +40,7 @@ export async function* streamGeminiToOpenAI(
 
   for await (const chunk of geminiStream) {
     // Check if the first chunk is a complete response
-    if (
-      firstChunk &&
-      chunk.response.candidates &&
-      chunk.response.candidates?.[0]?.finishReason
-    ) {
+    if (firstChunk && chunk.candidates && chunk.candidates?.[0]?.finishReason) {
       const openAIResponse = transformGeminiResponseToOpenAI(chunk, modelName);
       yield `data: ${JSON.stringify(openAIResponse)}\n\n`;
       yield `data: [DONE]\n\n`;
@@ -53,8 +48,7 @@ export async function* streamGeminiToOpenAI(
     }
     firstChunk = false;
 
-    const content =
-      chunk.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const content = chunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (content) {
       const delta = {
         id: streamId,

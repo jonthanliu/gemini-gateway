@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const geminiModelName = mapping.target_name;
-    const geminiRequest = transformRequest(openaiRequest);
+    const geminiRequest = transformRequest(geminiModelName, openaiRequest);
 
     if (mapping.target_method === "streamGenerateContent") {
       const geminiStream = await geminiClient.streamGenerateContent(
