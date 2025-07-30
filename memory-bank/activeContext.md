@@ -2,25 +2,23 @@
 
 ## 当前工作焦点
 
-- **任务**: 实现智能模型映射系统的核心功能。
-- **状态**: 已完成。后端逻辑、API 集成和前端只读 UI 已实现并提交。
+- **任务**: 完成模型映射管理 (CRUD) 功能并重构 UI。
+- **状态**: 已完成。
 
 ## 近期变更
 
-- **数据库**: 添加了 `model_mappings` 表。
-- **服务层**: 创建了 `ModelMappingService` 来处理路由逻辑。
-- **API 层**: 重构了所有 `chat/completions` 和 `models` 路由以使用新服务。
-- **UI 层**:
-  - 添加了新的模型映射管理页面 (`/admin/mappings`)。
-  - 为新页面添加了 i18n 支持。
-  - 更新了顶部导航栏。
-- **代码提交**: 将上述工作分为 4 个独立的 commit 推送到仓库。
+- **服务层**: 在 `ModelMappingService` 中实现了完整的 CRUD 方法。
+- **Actions**: 创建了用于 mappings 的 Server Actions。
+- **UI 重构**:
+  - 将 `AddMappingDialog` 和 `EditMappingDialog` 合并为统一的 `MappingFormDialog` 组件，以减少代码重复。
+  - 实现了完整的国际化支持。
+  - 修复了组件文件名的命名规范问题。
+- **代码提交**: 将 CRUD 后端逻辑和 UI 重构工作分步提交到仓库。
 
 ## 下一步
 
-- 在 `ModelMappingService` 中实现 `create`, `update`, `delete` 方法。
-- 在 `app/(web)/[lang]/admin/mappings/actions.ts` 中创建并导出相应的 Server Actions。
-- 在 `MappingsTable` 组件中添加触发这些 action 的 UI 元素（例如，编辑表单和删除按钮的确认对话框）。
+- **测试**: 为 `ModelMappingService` 编写单元测试，并为模型映射功能编写端到端（E2E）测试。
+- **增强的日志和分析**: 开始规划和实现仪表盘中更详细的 API 调用统计功能。
 
 ## 重要模式和偏好
 
