@@ -1,25 +1,44 @@
-// lib/adapters/gemini-to-gemini.ts
-import { geminiClient } from "@/lib/core/gemini-client";
-import { NextRequest, NextResponse } from "next/server";
+import type {
+  GenerateContentRequest,
+  GenerateContentResult,
+} from "@google/generative-ai";
 
-export async function geminiPassthroughAdapter(request: NextRequest, model: string) {
-  const requestBody = await request.json();
-  const isStream = request.url.includes("streamGenerateContent");
+/**
+ * Transforms a native Gemini request body for the GeminiClient.
+ *
+ * This is a pure passthrough function. It assumes the client is sending a
+ * request body that is already 100% compliant with the @google/generative-ai SDK.
+ * The sole purpose of this gateway for the Gemini protocol is key management.
+ *
+ * @param _model - The model name (unused).
+ * @param requestBody - The raw request body from the client.
+ * @returns A promise that resolves to the original request body.
+ */
+export function transformRequest(
+  _model: string,
+  requestBody: GenerateContentRequest
+): Promise<GenerateContentRequest> {
+  return Promise.resolve(requestBody);
+}
 
-  const geminiResponse = await geminiClient.generateContent(
-    model,
-    requestBody,
-    isStream
-  );
+/**
+ * Transforms a non-streaming Gemini result for the client.
+ * This is a passthrough as no conversion is needed.
+ */
+export function transformResponse(
+  geminiResult: GenerateContentResult
+): GenerateContentResult {
+  return geminiResult;
+}
 
-  if (!geminiResponse.ok) {
-    return new NextResponse(geminiResponse.body, { status: geminiResponse.status });
+/**
+ * Transforms a streaming Gemini result into a string generator
+ * for the client, formatting each chunk as newline-delimited JSON.
+ */
+export async function* transformStream(
+  geminiStream: AsyncGenerator<GenerateContentResult>
+): AsyncGenerator<string> {
+  for await (const chunk of geminiStream) {
+    yield `data: ${JSON.stringify(chunk.response)}\n\n`;
   }
-
-  return new NextResponse(geminiResponse.body, {
-    status: 200,
-    headers: {
-      "Content-Type": geminiResponse.headers.get("Content-Type") || "application/json",
-    },
-  });
 }

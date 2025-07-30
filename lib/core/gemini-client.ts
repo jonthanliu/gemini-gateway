@@ -30,7 +30,7 @@ export class RequestTimeoutError extends Error {
 }
 
 export class GeminiClient {
-  private readonly MAX_RETRY_DURATION_MS = 60000; // 60 seconds
+  private readonly MAX_RETRY_DURATION_MS = 30000; // 60 seconds
   private readonly RETRY_DELAY_MS = 5000; // 5 seconds
 
   constructor() {
