@@ -9,7 +9,7 @@
 
 - **模型映射重构**:
   - **数据库**: 将 `model_mappings` 表中的 `target_endpoint` 字段重构为类型安全的 `target_method` 枚举 (`generateContent` | `streamGenerateContent`)。
-  - **UI**: 更新了管理界面的映射表单，使用下拉菜单选择 `target_method`，并禁止删除 `__DEFAULT__` 规则。
+  - **UI**: 更新了管理界面的映射表单，使用下拉菜单选择 `target_method`。同时，在表格中禁止了删除 `__DEFAULT__` 规则，并在编辑表单中禁止了修改其名称。
   - **API 路由**: 修改了 OpenAI 和 Anthropic 的 API 路由，使其流式/非流式行为完全由数据库中的 `target_method` 配置驱动。
   - **版本控制**: 将所有相关的代码更改组织到三个独立的、有意义的 Git 提交中。
 
