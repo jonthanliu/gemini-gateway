@@ -16,8 +16,10 @@ export function Topbar() {
   const lang = pathname.split("/")[1];
 
   const getCurrentTab = () => {
-    if (pathname.endsWith("/config")) return "config";
-    if (pathname.endsWith("/logs")) return "logs";
+    if (pathname.includes("/config")) return "config";
+    if (pathname.includes("/logs")) return "logs";
+    if (pathname.includes("/mappings")) return "mappings";
+    if (pathname.includes("/keys")) return "keys";
     return "dashboard";
   };
 
@@ -35,8 +37,16 @@ export function Topbar() {
             <Link href={`/${lang}/admin/config`} passHref>
               <TabsTrigger value="config">{dict.topbar.nav.config}</TabsTrigger>
             </Link>
+            <Link href={`/${lang}/admin/keys`} passHref>
+              <TabsTrigger value="keys">{dict.topbar.nav.keys}</TabsTrigger>
+            </Link>
             <Link href={`/${lang}/admin/logs`} passHref>
               <TabsTrigger value="logs">{dict.topbar.nav.logs}</TabsTrigger>
+            </Link>
+            <Link href={`/${lang}/admin/mappings`} passHref>
+              <TabsTrigger value="mappings">
+                {dict.topbar.nav.mappings}
+              </TabsTrigger>
             </Link>
           </TabsList>
         </Tabs>

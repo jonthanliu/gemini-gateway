@@ -15,9 +15,22 @@
                 "dashboard": "仪表盘",
                 "config": "配置",
                 "keys": "API 密钥",
-                "logs": "日志"
+                "logs": "日志",
+                "mappings": "模型映射"
             },
             "logout": "退出登录"
+        },
+        "mappings": {
+            "title": "模型映射",
+            "description": "配置规则，将传入的模型请求路由到不同的下游目标。",
+            "table": {
+                "sourceModel": "源模型",
+                "protocol": "协议",
+                "priority": "优先级",
+                "targetModel": "目标模型",
+                "actions": "操作",
+                "openMenuAria": "打开菜单"
+            }
         },
         "dashboard": {
             "title": "仪表盘",

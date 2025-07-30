@@ -15,9 +15,22 @@
                 "dashboard": "Dashboard",
                 "config": "Configuration",
                 "keys": "API Keys",
-                "logs": "Logs"
+                "logs": "Logs",
+                "mappings": "Model Mappings"
             },
             "logout": "Logout"
+        },
+        "mappings": {
+            "title": "Model Mappings",
+            "description": "Configure rules to route incoming model requests to different downstream targets.",
+            "table": {
+                "sourceModel": "Source Model",
+                "protocol": "Protocol",
+                "priority": "Priority",
+                "targetModel": "Target Model",
+                "actions": "Actions",
+                "openMenuAria": "Open menu"
+            }
         },
         "dashboard": {
             "title": "Dashboard",
