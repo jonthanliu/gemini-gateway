@@ -75,13 +75,17 @@ class ModelMappingService {
     });
   }
   async create(data: Omit<ModelMapping, "id" | "createdAt" | "updatedAt">) {
-    /* ... */
+    return db.insert(modelMappings).values(data).returning();
   }
   async update(id: number, data: Partial<Omit<ModelMapping, "id">>) {
-    /* ... */
+    return db
+      .update(modelMappings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(modelMappings.id, id))
+      .returning();
   }
   async delete(id: number) {
-    /* ... */
+    return db.delete(modelMappings).where(eq(modelMappings.id, id)).returning();
   }
 }
 
