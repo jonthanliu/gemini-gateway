@@ -2,33 +2,30 @@
 
 ## 当前工作焦点
 
-- **任务**: 增强的日志和分析。
-- **状态**: **已完成**。
+- **任务**: 修复因 `@google/genai` SDK 迁移不完全而导致的 504 网关超时错误。
+- **状态**: 已完成。
 
 ## 近期变更
 
-- **增强的日志和分析**:
-  - **服务层 (`lib/services/stats.service.ts`)**:
-    - 扩展了服务，添加了 `getStatsByModel`, `getStatsByApiKey`, 和 `getDailyStats` 函数。
-    - 这些函数按不同维度（模型、API 密钥、日期）聚合请求日志，计算总请求数、成功率和平均延迟。
-    - 修复了在实现过程中出现的多个 TypeScript 类型错误，并确保了数据库查询的正确性（例如，使用 `sql` 辅助函数按日期进行分组）。
-  - **UI 组件 (`app/(web)/[lang]/admin/components/`)**:
-    - **引入 `recharts`**: 将 `recharts` 库添加到项目中，用于数据可视化。
-    - **创建 `AnalyticsDashboard.tsx`**: 这是一个新的客户端组件 (`"use client"`)，用于动态获取和显示分析数据。它包含：
-      - 一个按天显示调用历史的条形图。
-      - 一个按模型显示统计数据的表格。
-    - **更新 `Dashboard.tsx`**: 将新的 `AnalyticsDashboard` 组件集成到主仪表盘中，使其在核心统计数据下方呈现。
-    - **代码质量**: 根据 ESLint 的反馈，移除了 `AnalyticsDashboard.tsx` 中未使用的 `apiKeyStats` 变量，确保了代码的整洁性。
-- **模型映射重构**:
-  - **数据库**: 将 `model_mappings` 表中的 `target_endpoint` 字段重构为类型安全的 `target_method` 枚举。
-  - **UI**: 更新了管理界面的映射表单和表格，以反映和保护新的 `target_method` 字段和 `__DEFAULT__` 规则。
-  - **API 路由**: 更新了 API 路由，使其行为由数据库配置驱动。
+- **核心 Bug 修复 (504 超时)**:
+
+  - **问题**: 在调用 Gemini API 时出现 504 网关超时，原因是 `lib/core/gemini-client.ts` 未能正确使用新的 `@google/genai` SDK。
+  - **调查**: 在多次尝试失败后，通过用户指示阅读了官方迁移文档，明确了正确的 API 调用模式。
+  - **根本原因**:
+    1.  `gemini-client` 使用了错误的客户端实例化方法 (`new GoogleGenAI("key")` 而不是 `new GoogleGenAI({apiKey: "key"})`)。
+    2.  `gemini-client` 使用了错误的模型调用方法 (先获取模型实例再调用，而不是直接在 `ai.models` 服务上调用)。
+    3.  数据流源头 (`gemini-to-gemini` 适配器) 没有将模型名称正确地注入到请求体中。
+  - **解决方案**:
+    1.  修改了 `lib/adapters/gemini-to-gemini.ts` 中的 `transformRequest`，使其将 `model` 名称合并到请求对象中。
+    2.  重构了 `lib/core/gemini-client.ts` 中的 `attemptRequest` 和 `executeRequest` 方法，移除了冗余的 `model` 参数，并采用了正确的、基于文档的 SDK 调用方式。
+
+- **Bug 修复 (系列)**:
+  - **问题 1**: 修复了在 `app/(api)/gemini/v1beta/models/[model]/route.ts` 中由于 `@google/genai` SDK 迁移导致的编译错误。
+  - **问题 2**: 修复了在 `lib/stream-utils.ts` 中由于残留的旧 SDK 导入而导致的编译错误。
 
 ## 下一步
 
-- **任务**: 暂无。等待下一个任务分配。
-
-## 重要模式和偏好
+- **任务**: 等待新的任务分配。
 
 ## 重要模式和偏好
 
