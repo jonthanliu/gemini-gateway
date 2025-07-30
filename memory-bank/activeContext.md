@@ -2,22 +2,25 @@
 
 ## 当前工作焦点
 
-- **任务**: 初始化项目记忆库。
-- **状态**: 正在创建核心文档。
+- **任务**: 实现智能模型映射系统的核心功能。
+- **状态**: 已完成。后端逻辑、API 集成和前端只读 UI 已实现并提交。
 
 ## 近期变更
 
-- 创建了 `memory-bank` 目录。
-- 创建了 `projectbrief.md`。
-- 创建了 `productContext.md`。
-- 创建了 `systemPatterns.md`。
-- 创建了 `techContext.md`。
+- **数据库**: 添加了 `model_mappings` 表。
+- **服务层**: 创建了 `ModelMappingService` 来处理路由逻辑。
+- **API 层**: 重构了所有 `chat/completions` 和 `models` 路由以使用新服务。
+- **UI 层**:
+  - 添加了新的模型映射管理页面 (`/admin/mappings`)。
+  - 为新页面添加了 i18n 支持。
+  - 更新了顶部导航栏。
+- **代码提交**: 将上述工作分为 4 个独立的 commit 推送到仓库。
 
 ## 下一步
 
-- 创建 `progress.md` 文件。
-- 完成记忆库的初始化。
-- 准备好接收下一个开发任务。
+- 在 `ModelMappingService` 中实现 `create`, `update`, `delete` 方法。
+- 在 `app/(web)/[lang]/admin/mappings/actions.ts` 中创建并导出相应的 Server Actions。
+- 在 `MappingsTable` 组件中添加触发这些 action 的 UI 元素（例如，编辑表单和删除按钮的确认对话框）。
 
 ## 重要模式和偏好
 
