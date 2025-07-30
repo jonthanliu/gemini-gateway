@@ -47,7 +47,10 @@ export function MappingFormDialog({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const data = {
-      source_name: formData.get("source_name") as string,
+      source_name:
+        mapping?.source_name === "__DEFAULT__"
+          ? mapping.source_name
+          : (formData.get("source_name") as string),
       source_protocol: formData.get(
         "source_protocol"
       ) as ModelMapping["source_protocol"],
