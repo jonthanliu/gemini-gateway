@@ -53,7 +53,9 @@ export function MappingFormDialog({
       ) as ModelMapping["source_protocol"],
       priority: Number(formData.get("priority") || 0),
       target_name: formData.get("target_name") as string,
-      target_endpoint: formData.get("target_endpoint") as string,
+      target_method: formData.get(
+        "target_method"
+      ) as ModelMapping["target_method"],
       target_provider: "gemini" as const,
       capabilities: null,
       constraints: null,
@@ -144,16 +146,26 @@ export function MappingFormDialog({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="target_endpoint" className="text-right">
-                {tableDict.targetEndpoint}
+              <Label htmlFor="target_method" className="text-right">
+                {tableDict.targetMethod}
               </Label>
-              <Input
-                id="target_endpoint"
-                name="target_endpoint"
-                defaultValue={mapping?.target_endpoint}
-                className="col-span-3"
+              <Select
+                name="target_method"
+                defaultValue={mapping?.target_method}
                 required
-              />
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder={dict.selectMethod} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="generateContent">
+                    {dict.methodGenerateContent}
+                  </SelectItem>
+                  <SelectItem value="streamGenerateContent">
+                    {dict.methodStreamGenerateContent}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

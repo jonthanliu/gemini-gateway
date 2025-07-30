@@ -95,7 +95,9 @@ export function MappingsTable({ data }: MappingsTableProps) {
                     <DropdownMenuItem
                       className="text-red-600"
                       onClick={() => handleDelete(mapping)}
-                      disabled={isPending}
+                      disabled={
+                        isPending || mapping.source_name === "__DEFAULT__"
+                      }
                     >
                       {commonDict.delete}
                     </DropdownMenuItem>

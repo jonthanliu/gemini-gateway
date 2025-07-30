@@ -28,7 +28,7 @@
                 "protocol": "协议",
                 "priority": "优先级",
                 "targetModel": "目标模型",
-                "targetEndpoint": "目标端点",
+                "targetMethod": "目标方法",
                 "actions": "操作",
                 "openMenuAria": "打开菜单"
             },
@@ -38,6 +38,9 @@
                 "editTitle": "编辑模型映射",
                 "editDescription": "更新此映射规则的详细信息。",
                 "selectProtocol": "选择一个协议",
+                "selectMethod": "选择一个方法",
+                "methodGenerateContent": "单元 (generateContent)",
+                "methodStreamGenerateContent": "流式 (streamGenerateContent)",
                 "creating": "创建中...",
                 "saving": "保存中..."
             }

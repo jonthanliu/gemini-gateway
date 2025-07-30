@@ -28,7 +28,7 @@
                 "protocol": "Protocol",
                 "priority": "Priority",
                 "targetModel": "Target Model",
-                "targetEndpoint": "Target Endpoint",
+                "targetMethod": "Target Method",
                 "actions": "Actions",
                 "openMenuAria": "Open menu"
             },
@@ -38,6 +38,9 @@
                 "editTitle": "Edit Model Mapping",
                 "editDescription": "Update the details of this mapping rule.",
                 "selectProtocol": "Select a protocol",
+                "selectMethod": "Select a method",
+                "methodGenerateContent": "Unary (generateContent)",
+                "methodStreamGenerateContent": "Streaming (streamGenerateContent)",
                 "creating": "Creating...",
                 "saving": "Saving..."
             }
