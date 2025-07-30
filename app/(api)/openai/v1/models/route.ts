@@ -1,46 +1,7 @@
 import { isAuthenticated } from "@/lib/auth/auth";
 import logger from "@/lib/logger";
-import { retryWithExponentialBackoff } from "@/lib/proxy/retry-handler";
+import { modelMappingService } from "@/lib/services/model-mapping.service";
 import { NextRequest, NextResponse } from "next/server";
-
-const BASE_URL = "https://generativelanguage.googleapis.com";
-const API_VERSION = "v1beta";
-
-async function proxyModelsRequest() {
-  const { models } = await retryWithExponentialBackoff(
-    async (apiKey: string) => {
-      const response = await fetch(`${BASE_URL}/${API_VERSION}/models`, {
-        headers: {
-          "x-goog-api-key": apiKey,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    },
-    "gemini-2.5-pro" // Pass a placeholder model for key selection
-  );
-
-  const responseBody = {
-    object: "list",
-    data: models.map(({ name }: { name: string }) => ({
-      id: name.replace("models/", ""),
-      object: "model",
-      created: 0,
-      owned_by: "google",
-      permission: [],
-      root: name.replace("models/", ""),
-      parent: null,
-    })),
-  };
-
-  return NextResponse.json(responseBody, {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 export async function GET(req: NextRequest) {
   const authResponse = await isAuthenticated(req);
@@ -49,17 +10,30 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    return await proxyModelsRequest();
+    const availableMappings = await modelMappingService.listAvailableModels(
+      "openai"
+    );
+
+    const modelsData = availableMappings
+      .filter((m) => m.source_name !== "__DEFAULT__") // Don't advertise the default rule
+      .map((mapping) => ({
+        id: mapping.source_name,
+        object: "model",
+        created: Math.floor(Date.now() / 1000),
+        owned_by: "gemini-gateway",
+      }));
+
+    return NextResponse.json({
+      object: "list",
+      data: modelsData,
+    });
   } catch (error) {
     logger.error(
       {
         error,
         errorMessage: error instanceof Error ? error.message : "N/A",
-        errorStack: error instanceof Error ? error.stack : "N/A",
-        errorConstructor: error?.constructor?.name,
-        errorString: String(error),
       },
-      "[Models Bridge Error]"
+      "[v1/models] Error fetching available models"
     );
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred.";

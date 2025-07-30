@@ -5,6 +5,7 @@ import {
 } from "@/lib/adapters/openai-to-gemini";
 import { geminiClient } from "@/lib/core/gemini-client";
 import logger from "@/lib/logger";
+import { modelMappingService } from "@/lib/services/model-mapping.service";
 import { iteratorToStream } from "@/lib/stream-utils";
 import { OpenAIChatCompletionRequest } from "@/lib/types/openai-types";
 import { NextRequest, NextResponse } from "next/server";
@@ -12,17 +13,23 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const openaiRequest = (await req.json()) as OpenAIChatCompletionRequest;
+    const requestedOpenAIModel = openaiRequest.model;
 
-    const modelMap: Record<string, string> = {
-      "gpt-3.5-turbo": "gemini-2.5-flash",
-      "gpt-4": "gemini-2.5-pro",
-      "gpt-4-turbo": "gemini-2.5-pro",
-      "gpt-4o": "gemini-2.5-pro",
-    };
-    const requestedOpenAIModel = openaiRequest.model || "gpt-3.5-turbo";
-    const geminiModelName =
-      modelMap[requestedOpenAIModel] || "gemini-2.5-flash";
+    const mapping = await modelMappingService.findMapping(
+      "openai",
+      requestedOpenAIModel
+    );
 
+    if (!mapping) {
+      return new NextResponse(
+        JSON.stringify({
+          error: `Model not supported: ${requestedOpenAIModel}`,
+        }),
+        { status: 404 }
+      );
+    }
+
+    const geminiModelName = mapping.target_name;
     const geminiRequest = transformRequest(openaiRequest);
 
     if (openaiRequest.stream) {

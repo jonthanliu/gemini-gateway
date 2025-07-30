@@ -5,6 +5,7 @@ import {
 } from "@/lib/adapters/anthropic-to-gemini";
 import { geminiClient } from "@/lib/core/gemini-client";
 import logger from "@/lib/logger";
+import { modelMappingService } from "@/lib/services/model-mapping.service";
 import { iteratorToStream } from "@/lib/stream-utils";
 import * as Anthropic from "@anthropic-ai/sdk/resources/messages";
 import { NextRequest, NextResponse } from "next/server";
@@ -13,7 +14,27 @@ export async function POST(req: NextRequest) {
   try {
     const anthropicRequest =
       (await req.json()) as Anthropic.MessageCreateParams;
-    const geminiModelName = "gemini-2.5-pro"; // Or map from anthropicRequest.model
+    const requestedAnthropicModel = anthropicRequest.model;
+
+    const mapping = await modelMappingService.findMapping(
+      "anthropic",
+      requestedAnthropicModel
+    );
+
+    if (!mapping) {
+      return NextResponse.json(
+        {
+          type: "error",
+          error: {
+            type: "not_found_error",
+            message: `Model not supported: ${requestedAnthropicModel}`,
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    const geminiModelName = mapping.target_name;
     const geminiRequest = transformRequest(anthropicRequest);
 
     if (anthropicRequest.stream) {
