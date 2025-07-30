@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const geminiModelName = mapping.target_name;
     const geminiRequest = transformRequest(anthropicRequest);
 
-    if (anthropicRequest.stream) {
+    if (mapping.target_method === "streamGenerateContent") {
       const geminiStream = await geminiClient.streamGenerateContent(
         geminiModelName,
         geminiRequest
