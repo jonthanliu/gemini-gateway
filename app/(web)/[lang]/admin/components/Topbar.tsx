@@ -37,9 +37,6 @@ export function Topbar() {
             <Link href={`/${lang}/admin/config`} passHref>
               <TabsTrigger value="config">{dict.topbar.nav.config}</TabsTrigger>
             </Link>
-            <Link href={`/${lang}/admin/keys`} passHref>
-              <TabsTrigger value="keys">{dict.topbar.nav.keys}</TabsTrigger>
-            </Link>
             <Link href={`/${lang}/admin/logs`} passHref>
               <TabsTrigger value="logs">{dict.topbar.nav.logs}</TabsTrigger>
             </Link>

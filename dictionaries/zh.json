@@ -28,8 +28,18 @@
                 "protocol": "协议",
                 "priority": "优先级",
                 "targetModel": "目标模型",
+                "targetEndpoint": "目标端点",
                 "actions": "操作",
                 "openMenuAria": "打开菜单"
+            },
+            "form": {
+                "addTitle": "创建新模型映射",
+                "addDescription": "向映射表添加一条新规则。",
+                "editTitle": "编辑模型映射",
+                "editDescription": "更新此映射规则的详细信息。",
+                "selectProtocol": "选择一个协议",
+                "creating": "创建中...",
+                "saving": "保存中..."
             }
         },
         "dashboard": {

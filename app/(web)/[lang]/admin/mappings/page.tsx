@@ -1,7 +1,8 @@
+import { Button } from "@/components/ui/button";
 import { Locale } from "@/i18n-config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { modelMappingService } from "@/lib/services/model-mapping.service";
-import { AddMappingDialog } from "./components/AddMappingDialog";
+import { MappingFormDialog } from "./components/MappingFormDialog";
 import { MappingsTable } from "./components/MappingsTable";
 
 export default async function MappingsPage({
@@ -22,7 +23,9 @@ export default async function MappingsPage({
           <h1 className="text-2xl font-bold">{dict.title}</h1>
           <p className="text-muted-foreground">{dict.description}</p>
         </div>
-        <AddMappingDialog />
+        <MappingFormDialog>
+          <Button>{dictionary.common.add}</Button>
+        </MappingFormDialog>
       </div>
       <MappingsTable data={mappings} />
     </div>

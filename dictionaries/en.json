@@ -28,8 +28,18 @@
                 "protocol": "Protocol",
                 "priority": "Priority",
                 "targetModel": "Target Model",
+                "targetEndpoint": "Target Endpoint",
                 "actions": "Actions",
                 "openMenuAria": "Open menu"
+            },
+            "form": {
+                "addTitle": "Create New Model Mapping",
+                "addDescription": "Add a new rule to the mapping table.",
+                "editTitle": "Edit Model Mapping",
+                "editDescription": "Update the details of this mapping rule.",
+                "selectProtocol": "Select a protocol",
+                "creating": "Creating...",
+                "saving": "Saving..."
             }
         },
         "dashboard": {
