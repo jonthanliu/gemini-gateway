@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { integer, real, sqliteTable, text, index } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 export const requestLogs = sqliteTable(
   "RequestLog",
@@ -48,4 +54,36 @@ export const apiKeys = sqliteTable("ApiKey", {
   lastFailedAt: integer("lastFailedAt", { mode: "timestamp" }),
   disabledUntil: integer("disabledUntil", { mode: "timestamp" }),
   enabled: integer("enabled", { mode: "boolean" }).default(true).notNull(),
+});
+
+export const modelMappings = sqliteTable("model_mappings", {
+  id: integer("id").primaryKey(),
+  source_name: text("source_name").notNull(), // e.g., "gpt-4-*", "claude-3-opus-20240229", or "__DEFAULT__"
+  source_protocol: text("source_protocol", {
+    enum: ["openai", "anthropic", "gemini"],
+  }).notNull(),
+  priority: integer("priority").default(0).notNull(), // Higher number means higher priority for template matches
+
+  target_name: text("target_name").notNull(), // e.g., "gemini-2.5-pro-latest"
+  target_provider: text("target_provider", { enum: ["gemini"] })
+    .default("gemini")
+    .notNull(), // For future expansion
+  target_endpoint: text("target_endpoint").notNull(), // e.g., "v1beta/models/{model}:streamGenerateContent"
+
+  capabilities: text("capabilities", { mode: "json" }).$type<{
+    vision: boolean;
+    tool_calling: boolean;
+    json_mode: boolean;
+  }>(),
+  constraints: text("constraints", { mode: "json" }).$type<{
+    context_window: number;
+    max_output_tokens: number;
+  }>(),
+
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(strftime('%s', 'now'))`
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(
+    sql`(strftime('%s', 'now'))`
+  ),
 });
