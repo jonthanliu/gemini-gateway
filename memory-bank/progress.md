@@ -16,6 +16,9 @@
 - **单元测试覆盖**:
   - **描述**: 为 `lib/services` 和 `lib/adapters` 中新增和之前未覆盖的代码添加了单元测试。
   - **状态**: `ModelMappingService`, `gemini-to-gemini`, 和 `gemini-to-openai` 已覆盖。
+- **数据库驱动的路由逻辑重构**:
+  - **描述**: 将 `model_mappings` 表中的 `target_endpoint` 字段重构为 `target_method`，并更新了 UI 和 API 路由以使用此新配置来决定流式/非流式行为。
+  - **状态**: 功能完成。
 
 ## 待办事项
 
