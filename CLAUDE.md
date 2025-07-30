@@ -60,6 +60,21 @@ The application is built with the Next.js App Router, TypeScript, and uses Drizz
   pnpm db:migrate:prod
   ```
 
+## 项目简介
+
+本项目是一个把 OpenAI、anthropic 和 Gemini 大语言模型协议转发到 Gemini 池的开源应用服务。具体的工作流程是：
+
+1. 接到上游大模型 API 发来的请求，
+2. 根据路由确定是哪家模型，
+3. 解析请求数据，
+4. 选定合适的下游大模型（目前仅支持 gemini-2.5-pro，所有请求都在此模型处理），
+5. 组合下游大模型数据，
+6. 根据调度选定 Gemini 的 key，
+7. 向下游 API 发送 数据，
+8. 获取数据，
+9. 转换成上游可识别的响应（流式或非流式），
+10. 向上游大模型发送响应。
+
 ## 一些知识点
 
 - middleware：https://nextjs.org/docs/app/api-reference/file-conventions/middleware
