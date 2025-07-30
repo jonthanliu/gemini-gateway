@@ -99,6 +99,7 @@ export function MappingFormDialog({
                 defaultValue={mapping?.source_name}
                 className="col-span-3"
                 required
+                disabled={mapping?.source_name === "__DEFAULT__"}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
