@@ -56,8 +56,6 @@ export function transformResponse(
     } as Anthropic.Messages.Message["usage"],
   } as Anthropic.Messages.Message;
 
-  console.log(`AnthropicMessage:`, res);
-
   return res;
 }
 
