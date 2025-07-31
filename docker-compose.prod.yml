@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  app:
+    # Directly pull the pre-built image from GitHub Container Registry.
+    # Replace <owner>/<repository> with your GitHub username and repository name.
+    # Example: image: ghcr.io/jonthanliu/gemini-gateway:main
+    image: ghcr.io/jonthanliu/gemini-gateway:main
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount a local data directory to persist the SQLite database.
+      - ./data:/app/data
+    env_file:
+      # Load runtime environment variables from a .env file.
+      - .env

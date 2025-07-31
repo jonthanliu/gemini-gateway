@@ -1,5 +1,5 @@
+import "@/lib/config/envConfig";
 import type { Config } from "drizzle-kit";
-import "./src/lib/config/envConfig";
 
 const dialect = process.env.DB_DIALECT || "sqlite";
 
@@ -12,7 +12,7 @@ let config: Config;
 switch (dialect) {
   case "postgresql":
     config = {
-      schema: "./src/lib/db/schema.ts",
+      schema: "./lib/db/schema.ts",
       out: "./drizzle/migrations",
       dialect: "postgresql",
       dbCredentials: {
@@ -23,7 +23,7 @@ switch (dialect) {
   case "sqlite":
   default:
     config = {
-      schema: "./src/lib/db/schema.ts",
+      schema: "./lib/db/schema.ts",
       out: "./drizzle/migrations",
       dialect: "sqlite",
       dbCredentials: {

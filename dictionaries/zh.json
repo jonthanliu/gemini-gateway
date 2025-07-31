@@ -1,0 +1,287 @@
+{
+    "common": {
+        "save": "保存",
+        "cancel": "取消",
+        "delete": "删除",
+        "add": "添加",
+        "edit": "编辑",
+        "view": "查看",
+        "close": "关闭"
+    },
+    "admin": {
+        "topbar": {
+            "title": "Gemini Gateway",
+            "nav": {
+                "dashboard": "仪表盘",
+                "config": "配置",
+                "keys": "API 密钥",
+                "logs": "日志",
+                "mappings": "模型映射"
+            },
+            "logout": "退出登录"
+        },
+        "mappings": {
+            "title": "模型映射",
+            "description": "配置规则，将传入的模型请求路由到不同的下游目标。",
+            "table": {
+                "sourceModel": "源模型",
+                "protocol": "协议",
+                "priority": "优先级",
+                "targetModel": "目标模型",
+                "targetMethod": "目标方法",
+                "actions": "操作",
+                "openMenuAria": "打开菜单"
+            },
+            "form": {
+                "addTitle": "创建新模型映射",
+                "addDescription": "向映射表添加一条新规则。",
+                "editTitle": "编辑模型映射",
+                "editDescription": "更新此映射规则的详细信息。",
+                "selectProtocol": "选择一个协议",
+                "selectMethod": "选择一个方法",
+                "methodGenerateContent": "单元 (generateContent)",
+                "methodStreamGenerateContent": "流式 (streamGenerateContent)",
+                "creating": "创建中...",
+                "saving": "保存中..."
+            }
+        },
+        "dashboard": {
+            "title": "仪表盘",
+            "totalKeys": "总数",
+            "activeKeys": "有效",
+            "inactiveKeys": "无效",
+            "totalCalls": "API 调用总数",
+            "avgResponseTime": "平均响应时间",
+            "keyStatsTitle": "密钥统计",
+            "apiCallStatsTitle": "API 调用统计",
+            "detailedKeyStats": "详细密钥统计",
+            "detailedApiCallStats": "详细 API 调用统计",
+            "last1m": "最近 1 分钟",
+            "last1h": "最近 1 小时",
+            "last24h": "最近 24 小时",
+            "error": {
+                "failedToFetchKeyStats": "获取密钥统计信息失败。",
+                "failedToFetchApiCallStats": "获取 API 调用统计信息失败。",
+                "failedToFetchDetailedKeyStats": "获取详细密钥统计信息失败。",
+                "failedToFetchDetailedApiCallStats": "获取详细 API 调用统计信息失败。"
+            }
+        },
+        "onboarding": {
+            "title": "欢迎使用 Gemini Gateway",
+            "description": "要开始使用，您需要添加至少一个 Google AI API 密钥。"
+        },
+        "keyForm": {
+            "label": "Google AI API 密钥 (每行一个)",
+            "placeholder": "请输入一个或多个 API 密钥，用换行符分隔...",
+            "saving": "保存中...",
+            "saveButton": "保存 API 密钥"
+        },
+        "addKeyDialog": {
+            "addButton": "添加新密钥",
+            "title": "添加 API 密钥",
+            "description": "在下方粘贴一个或多个 API 密钥，每行一个。",
+            "keyForm": {
+                "label": "API 密钥",
+                "placeholder": "每行输入一个 API 密钥",
+                "saving": "添加中...",
+                "saveButton": "添加密钥"
+            }
+        },
+        "config": {
+            "title": "配置",
+            "form": {
+                "title": "系统配置",
+                "description": "管理系统范围的设置。更改将在保存后应用。",
+                "tabs": {
+                    "general": "通用",
+                    "keys": "密钥 & 模型",
+                    "network": "网络",
+                    "security": "安全 & 工具"
+                },
+                "authToken": {
+                    "label": "管理员认证令牌",
+                    "placeholder": "留空以保持当前令牌"
+                },
+                "allowedTokens": {
+                    "label": "允许的客户端令牌",
+                    "description": "用逗号或换行符分隔的客户端令牌列表。"
+                },
+                "maxFailures": {
+                    "label": "最大密钥失败次数",
+                    "placeholder": "密钥停用前的失败次数"
+                },
+                "healthCheckModel": {
+                    "label": "健康检查模型",
+                    "placeholder": "用于定期健康检查的模型"
+                },
+                "proxyUrl": {
+                    "label": "上游代理 URL",
+                    "placeholder": "例如, http://user:pass@host:port"
+                },
+                "codeExecution": {
+                    "label": "为工具启用代码执行"
+                },
+                "safetySettings": {
+                    "label": "内容安全设置 (JSON)"
+                },
+                "budgetMap": {
+                    "label": "函数调用预算 (JSON)"
+                },
+                "saving": "保存中...",
+                "saveBtn": "保存配置",
+                "error": {
+                    "jsonError": "解析 JSON 字段时出错。请确保 SAFETY_SETTINGS 和 THINKING_BUDGET_MAP 是有效的 JSON。",
+                    "failedToUpdate": "更新配置失败。"
+                },
+                "success": {
+                    "updated": "配置已成功更新！"
+                },
+                "dynamicList": {
+                    "placeholder": "添加一个新项目...",
+                    "add": "添加",
+                    "generateTitle": "生成并添加令牌",
+                    "generateAria": "生成并添加",
+                    "bulkAdd": "批量添加",
+                    "bulkAddTitle": "批量添加项目",
+                    "bulkPlaceholder": "粘贴项目，用换行符或逗号分隔。",
+                    "bulkBtn": "添加项目",
+                    "noItems": "暂无项目。"
+                }
+            }
+        },
+        "keys": {
+            "title": "API 密钥",
+            "description": "管理和监控您的 Gemini API 密钥。",
+            "table": {
+                "key": "密钥",
+                "status": "状态",
+                "failCount": "失败次数",
+                "disabledUntil": "禁用至",
+                "totalCalls": "总调用",
+                "last1m": "1分钟",
+                "last1h": "1小时",
+                "last24h": "24小时",
+                "lastFailedAt": "上次失败时间",
+                "actions": "操作",
+                "active": "有效",
+                "inactive": "无效",
+                "notApplicable": "不适用",
+                "delete": "删除",
+                "resetFailures": "重置失败次数",
+                "verify": "验证密钥",
+                "viewDetails": "查看详情",
+                "openMenuAria": "打开菜单",
+                "selectAllAria": "选择所有行",
+                "selectRowAria": "选择密钥 {key}",
+                "deleteConfirmation": "您确定要删除密钥 {key} 吗？",
+                "error": {
+                    "noKeysForDeletion": "未提供要删除的密钥。",
+                    "failedToDelete": "删除 API 密钥失败。",
+                    "noKeysForReset": "未提供要重置的密钥。",
+                    "failedToReset": "重置密钥失败次数失败。",
+                    "noKeysForVerification": "未提供要验证的密钥。",
+                    "failedToVerify": "验证 API 密钥失败。"
+                },
+                "success": {
+                    "deleted": "已成功删除 {count} 个 API 密钥。",
+                    "reset": "已成功重置 {count} 个密钥的失败次数。",
+                    "verificationCompleted": "验证过程已完成。",
+                    "verificationResult": "密钥 {key} 的验证结果: {status}"
+                },
+                "failed": "失败",
+                "usageDetailsTitle": "密钥 {key} 的使用详情",
+                "activeKeys": "有效密钥 ({count})",
+                "inactiveKeys": "无效密钥 ({count})",
+                "searchPlaceholder": "按密钥片段搜索...",
+                "minFailCountPlaceholder": "最小失败次数...",
+                "selected": "已选择 {count} 个密钥",
+                "bulkVerify": "验证",
+                "bulkReset": "重置失败",
+                "bulkDelete": "删除",
+                "bulkDeleteConfirmation": "您确定要删除 {count} 个密钥吗？",
+                "usage": {
+                    "loading": "加载使用详情中...",
+                    "error": "获取使用详情失败。",
+                    "noDetails": "未找到详情。",
+                    "totalCalls": "总调用数",
+                    "success": "成功",
+                    "failed": "失败",
+                    "recentLogs": "最近的日志 (最近50条)",
+                    "time": "时间",
+                    "model": "模型",
+                    "status": "状态",
+                    "noLogs": "此密钥没有最近的日志。"
+                },
+                "confirm": "确定"
+            }
+        },
+        "logs": {
+            "title": "日志中心",
+            "description": "审查系统的请求和错误日志。",
+            "error": {
+                "failedToFetch": "获取 {logType} 日志失败。",
+                "failedToDelete": "删除 {logType} 日志失败。",
+                "failedToClear": "清除 {logType} 日志失败。"
+            },
+            "success": {
+                "deleted": "已删除 {count} 个日志。",
+                "cleared": "已清除所有 {logType} 日志。"
+            },
+            "tabs": {
+                "request": "请求日志",
+                "error": "错误日志"
+            },
+            "filters": {
+                "apiKey": "API 密钥",
+                "apiKeyPlaceholder": "包含...",
+                "errorType": "错误类型",
+                "errorTypePlaceholder": "例如, invalid_key",
+                "statusCode": "状态码",
+                "errorCode": "错误码",
+                "errorCodePlaceholder": "例如, 429",
+                "startDate": "开始日期",
+                "endDate": "结束日期",
+                "apply": "应用筛选",
+                "clear": "清除"
+            },
+            "columns": {
+                "timestamp": "时间戳",
+                "apiKey": "API 密钥",
+                "model": "模型",
+                "status": "状态",
+                "latency": "延迟",
+                "errorType": "错误类型",
+                "errorMessage": "错误信息",
+                "actions": "操作"
+            },
+            "details": {
+                "title": "日志详情 (ID: {id})"
+            },
+            "clearConfirmation": "您确定要清除所有 {logType} 日志吗？",
+            "bulkDeleteConfirmation": "您确定要删除 {count} 个日志吗？",
+            "selected": "已选择 {count} 个日志",
+            "deleteSelected": "删除所选",
+            "clearing": "清除中...",
+            "clearAll": "全部清除",
+            "logs": "日志",
+            "confirm": "确定"
+        },
+        "languageSwitcher": {
+            "title": "切换语言",
+            "en": "English",
+            "zh": "中文"
+        },
+        "loginForm": {
+            "title": "管理员访问",
+            "tokenLabel": "身份验证令牌",
+            "tokenHint": "请使用您在环境变量中设置的 AUTH_TOKEN。",
+            "signIn": "登录",
+            "signingIn": "登录中...",
+            "error": {
+                "emptyToken": "令牌不能为空。",
+                "invalidToken": "令牌无效。",
+                "failedToSaveToken": "保存新令牌失败。"
+            }
+        }
+    }
+}

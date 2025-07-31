@@ -1,0 +1,287 @@
+{
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "add": "Add",
+        "edit": "Edit",
+        "view": "View",
+        "close": "Close"
+    },
+    "admin": {
+        "topbar": {
+            "title": "Gemini Gateway",
+            "nav": {
+                "dashboard": "Dashboard",
+                "config": "Configuration",
+                "keys": "API Keys",
+                "logs": "Logs",
+                "mappings": "Model Mappings"
+            },
+            "logout": "Logout"
+        },
+        "mappings": {
+            "title": "Model Mappings",
+            "description": "Configure rules to route incoming model requests to different downstream targets.",
+            "table": {
+                "sourceModel": "Source Model",
+                "protocol": "Protocol",
+                "priority": "Priority",
+                "targetModel": "Target Model",
+                "targetMethod": "Target Method",
+                "actions": "Actions",
+                "openMenuAria": "Open menu"
+            },
+            "form": {
+                "addTitle": "Create New Model Mapping",
+                "addDescription": "Add a new rule to the mapping table.",
+                "editTitle": "Edit Model Mapping",
+                "editDescription": "Update the details of this mapping rule.",
+                "selectProtocol": "Select a protocol",
+                "selectMethod": "Select a method",
+                "methodGenerateContent": "Unary (generateContent)",
+                "methodStreamGenerateContent": "Streaming (streamGenerateContent)",
+                "creating": "Creating...",
+                "saving": "Saving..."
+            }
+        },
+        "dashboard": {
+            "title": "Dashboard",
+            "totalKeys": "Total",
+            "activeKeys": "Active",
+            "inactiveKeys": "Inactive",
+            "totalCalls": "Total API Calls",
+            "avgResponseTime": "Avg. Response Time",
+            "keyStatsTitle": "Key Statistics",
+            "apiCallStatsTitle": "API Call Statistics",
+            "detailedKeyStats": "Detailed Key Statistics",
+            "detailedApiCallStats": "Detailed API Call Statistics",
+            "last1m": "Last 1m",
+            "last1h": "Last 1h",
+            "last24h": "Last 24h",
+            "error": {
+                "failedToFetchKeyStats": "Failed to fetch key statistics.",
+                "failedToFetchApiCallStats": "Failed to fetch API call statistics.",
+                "failedToFetchDetailedKeyStats": "Failed to fetch detailed key statistics.",
+                "failedToFetchDetailedApiCallStats": "Failed to fetch detailed API call statistics."
+            }
+        },
+        "onboarding": {
+            "title": "Welcome to Gemini Gateway",
+            "description": "To get started, you need to add at least one Google AI API key."
+        },
+        "keyForm": {
+            "label": "Google AI API Keys (one per line)",
+            "placeholder": "Enter one or more API keys, separated by newlines...",
+            "saving": "Saving...",
+            "saveButton": "Save API Key(s)"
+        },
+        "addKeyDialog": {
+            "addButton": "Add New Key",
+            "title": "Add API Keys",
+            "description": "Paste one or more API keys below, one per line.",
+            "keyForm": {
+                "label": "API Keys",
+                "placeholder": "Enter one API key per line",
+                "saving": "Adding...",
+                "saveButton": "Add Keys"
+            }
+        },
+        "config": {
+            "title": "Configuration",
+            "form": {
+                "title": "System Configuration",
+                "description": "Manage system-wide settings. Changes will be applied after saving.",
+                "tabs": {
+                    "general": "General",
+                    "keys": "Keys & Models",
+                    "network": "Network",
+                    "security": "Security & Tools"
+                },
+                "authToken": {
+                    "label": "Admin Auth Token",
+                    "placeholder": "Leave blank to keep current token"
+                },
+                "allowedTokens": {
+                    "label": "Allowed Client Tokens",
+                    "description": "Comma or newline separated list of client tokens."
+                },
+                "maxFailures": {
+                    "label": "Max Key Failures",
+                    "placeholder": "Failures before a key is deactivated"
+                },
+                "healthCheckModel": {
+                    "label": "Health Check Model",
+                    "placeholder": "Model for periodic health checks"
+                },
+                "proxyUrl": {
+                    "label": "Upstream Proxy URL",
+                    "placeholder": "e.g., http://user:pass@host:port"
+                },
+                "codeExecution": {
+                    "label": "Enable Code Execution for Tools"
+                },
+                "safetySettings": {
+                    "label": "Content Safety Settings (JSON)"
+                },
+                "budgetMap": {
+                    "label": "Function Calling Budget (JSON)"
+                },
+                "saving": "Saving...",
+                "saveBtn": "Save Configuration",
+                "error": {
+                    "jsonError": "Error parsing JSON fields. Please ensure SAFETY_SETTINGS and THINKING_BUDGET_MAP are valid JSON.",
+                    "failedToUpdate": "Failed to update configuration."
+                },
+                "success": {
+                    "updated": "Configuration updated successfully!"
+                },
+                "dynamicList": {
+                    "placeholder": "Add a new item...",
+                    "add": "Add",
+                    "generateTitle": "Generate and Add Token",
+                    "generateAria": "Generate and Add",
+                    "bulkAdd": "Bulk Add",
+                    "bulkAddTitle": "Bulk Add Items",
+                    "bulkPlaceholder": "Paste items, separated by newlines or commas.",
+                    "bulkBtn": "Add Items",
+                    "noItems": "No items yet."
+                }
+            }
+        },
+        "keys": {
+            "title": "API Keys",
+            "description": "Manage and monitor your Gemini API keys.",
+            "table": {
+                "key": "Key",
+                "status": "Status",
+                "failCount": "Failure Count",
+                "disabledUntil": "Disabled Until",
+                "totalCalls": "Total Calls",
+                "last1m": "1m",
+                "last1h": "1h",
+                "last24h": "24h",
+                "lastFailedAt": "Last Failed At",
+                "actions": "Actions",
+                "active": "Active",
+                "inactive": "Inactive",
+                "notApplicable": "N/A",
+                "delete": "Delete",
+                "resetFailures": "Reset Failures",
+                "verify": "Verify Key",
+                "viewDetails": "View Details",
+                "openMenuAria": "Open menu",
+                "selectAllAria": "Select all rows",
+                "selectRowAria": "Select row for key {key}",
+                "deleteConfirmation": "Are you sure you want to delete the key {key}?",
+                "error": {
+                    "noKeysForDeletion": "No keys provided for deletion.",
+                    "failedToDelete": "Failed to delete API keys.",
+                    "noKeysForReset": "No keys provided for reset.",
+                    "failedToReset": "Failed to reset key failure counts.",
+                    "noKeysForVerification": "No keys provided for verification.",
+                    "failedToVerify": "Failed to verify API keys."
+                },
+                "success": {
+                    "deleted": "{count} API key(s) deleted successfully.",
+                    "reset": "{count} key(s) failure count reset successfully.",
+                    "verificationCompleted": "Verification process completed.",
+                    "verificationResult": "Verification for key {key}: {status}"
+                },
+                "failed": "Failed",
+                "usageDetailsTitle": "Usage Details for Key {key}",
+                "activeKeys": "Active Keys ({count})",
+                "inactiveKeys": "Inactive Keys ({count})",
+                "searchPlaceholder": "Search by key fragment...",
+                "minFailCountPlaceholder": "Min fail count...",
+                "selected": "{count} key(s) selected",
+                "bulkVerify": "Verify",
+                "bulkReset": "Reset Failures",
+                "bulkDelete": "Delete",
+                "bulkDeleteConfirmation": "Are you sure you want to delete {count} key(s)?",
+                "usage": {
+                    "loading": "Loading usage details...",
+                    "error": "Error",
+                    "noDetails": "No details found.",
+                    "totalCalls": "Total Calls",
+                    "success": "Success",
+                    "failed": "Failed",
+                    "recentLogs": "Recent Logs (Last 50)",
+                    "time": "Time",
+                    "model": "Model",
+                    "status": "Status",
+                    "noLogs": "No recent logs for this key."
+                },
+                "confirm": "Confirm"
+            }
+        },
+        "logs": {
+            "title": "Log Center",
+            "description": "Review request and error logs for the system.",
+            "error": {
+                "failedToFetch": "Failed to fetch {logType} logs.",
+                "failedToDelete": "Failed to delete {logType} logs.",
+                "failedToClear": "Failed to clear {logType} logs."
+            },
+            "success": {
+                "deleted": "{count} log(s) deleted.",
+                "cleared": "All {logType} logs cleared."
+            },
+            "tabs": {
+                "request": "Request Logs",
+                "error": "Error Logs"
+            },
+            "filters": {
+                "apiKey": "API Key",
+                "apiKeyPlaceholder": "Contains...",
+                "errorType": "Error Type",
+                "errorTypePlaceholder": "e.g., invalid_key",
+                "statusCode": "Status Code",
+                "errorCode": "Error Code",
+                "errorCodePlaceholder": "e.g., 429",
+                "startDate": "Start Date",
+                "endDate": "End Date",
+                "apply": "Apply Filters",
+                "clear": "Clear"
+            },
+            "columns": {
+                "timestamp": "Timestamp",
+                "apiKey": "API Key",
+                "model": "Model",
+                "status": "Status",
+                "latency": "Latency",
+                "errorType": "Error Type",
+                "errorMessage": "Error Message",
+                "actions": "Actions"
+            },
+            "details": {
+                "title": "Log Details (ID: {id})"
+            },
+            "clearConfirmation": "Are you sure you want to clear all {logType} logs?",
+            "bulkDeleteConfirmation": "Are you sure you want to delete {count} log(s)?",
+            "selected": "{count} log(s) selected",
+            "deleteSelected": "Delete Selected",
+            "clearing": "Clearing...",
+            "clearAll": "Clear All",
+            "logs": "Logs",
+            "confirm": "Confirm"
+        },
+        "languageSwitcher": {
+            "title": "Switch language",
+            "en": "English",
+            "zh": "Chinese"
+        },
+        "loginForm": {
+            "title": "Admin Access",
+            "tokenLabel": "Authentication Token",
+            "tokenHint": "Use the AUTH_TOKEN set in your environment variables.",
+            "signIn": "Sign in",
+            "signingIn": "Signing in...",
+            "error": {
+                "emptyToken": "Token cannot be empty.",
+                "invalidToken": "Invalid token.",
+                "failedToSaveToken": "Failed to save new token."
+            }
+        }
+    }
+}

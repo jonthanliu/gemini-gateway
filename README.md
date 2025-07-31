@@ -10,12 +10,13 @@ An intelligent AI gateway that supercharges your applications by providing a uni
 
 ## ✨ Key Features
 
-- **Unified API Interface**: Access Gemini models through multiple API formats, including **OpenAI**, **Anthropic**, and native **Gemini** protocols.
+- **Unified API Interface**: Access Gemini models through multiple API formats. Use standard model names like `gpt-4o` or `claude-3-opus`, and let the gateway handle the rest.
+- **Dynamic Model Routing**: Configure custom routing rules through the UI. Map any incoming model name (including wildcards like `gpt-4-*`) to a specific downstream Gemini model. Set priorities for wildcard matches.
 - **Smart Load Balancing**: Intelligently distributes requests across a pool of Gemini API keys to maximize throughput.
 - **Automatic Failover**: Automatically retries failed requests with the next available key, ensuring high availability.
-- **Persistent & Dynamic**: Manage API keys, authentication, and configurations on-the-fly through a web UI without service restarts.
+- **Persistent & Dynamic**: Manage API keys, model mappings, and configurations on-the-fly through a web UI without service restarts.
 - **Secure & Scalable**: Built with security in mind, ready for production deployment with Docker.
-- **Management Dashboard**: A sleek dashboard to monitor usage, manage keys, and configure the gateway in real-time.
+- **Management Dashboard**: A sleek dashboard to monitor usage, manage keys, and configure model routing rules in real-time.
 
 ## 🛠️ Tech Stack
 
@@ -29,8 +30,6 @@ An intelligent AI gateway that supercharges your applications by providing a uni
 
 ### Self-Hosting with Docker (Recommended)
 
-Deploying with Docker is the easiest way to get your Gemini Gateway up and running.
-
 1.  **Clone the repository:**
 
     ```bash
@@ -39,31 +38,81 @@ Deploying with Docker is the easiest way to get your Gemini Gateway up and runni
     ```
 
 2.  **Configure your environment:**
-    Create a `.env` file and add the following:
+    Copy the example environment file. This is the single source of truth for your gateway's configuration.
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Now, edit the `.env` file. **All fields are mandatory.**
 
     ```env
-    # Path for the production database inside the container
-    DATABASE_URL="file:/app/data/prod.db"
+    # --- Security (Mandatory) ---
+    # This is the password for the web admin panel.
+    AUTH_TOKEN="your_super_secret_admin_password"
 
-    # (Optional) A secure secret for the cron job endpoint
-    CRON_SECRET="a-very-secure-random-string"
+    # A comma-separated list of tokens that your API clients will use for authentication.
+    ALLOWED_TOKENS="client_token_1,client_token_2"
+
+    # A strong, random secret for signing Web UI session tokens (JWT).
+    # You can generate one here: https://www.uuidgenerator.net/
+    WEB_JWT_SECRET="your_strong_and_random_jwt_secret"
+
+    # --- Database (Do not change for Docker) ---
+    DATABASE_URL="file:/app/data/prod.db"
     ```
 
 3.  **Run with Docker Compose:**
-
-    It's recommended to mount a volume for persistent storage to preserve the database. The volume should be mounted at `/app/data`.
 
     ```bash
     docker-compose up --build -d
     ```
 
-4.  **First-Time Setup:**
-    - Open your browser and navigate to `http://YOUR_SERVER_IP:3000/admin`.
-    - You'll be prompted for a password. **Enter a new, strong password** to secure the admin dashboard. This will become your permanent admin password.
-    - Go to the **Keys** tab and add your Gemini API keys.
-    - Go to the **Configuration** tab and add "Allowed API Tokens". These are the tokens your client applications will use to authenticate. **It is strongly recommended to set allowed tokens on first run, otherwise the API will be open to public use, which may lead to excessive Gemini traffic consumption.**
+4.  **Access the Admin Panel & Onboarding:**
+    - Open your browser and navigate to `http://YOUR_SERVER_IP:3000`.
+    - You will be prompted to log in. Use the password you set for `AUTH_TOKEN` in the `.env` file.
+    - After logging in, you will be guided to add your first Gemini API Key.
+    - Once the key is added, you will be redirected to the main dashboard.
 
 Your gateway is now live and ready to serve requests!
+
+### Using the Pre-built Docker Image (Easiest)
+
+If you prefer not to build the image locally, you can directly use the latest image we build and publish automatically on `ghcr.io` via GitHub Actions.
+
+1.  **Create a `docker-compose.yml` file:**
+    On your server, create a file named `docker-compose.yml` and paste the following content. It will pull the latest `main` branch image.
+
+    ```yaml
+    version: "3.8"
+
+    services:
+      app:
+        image: ghcr.io/jonthanliu/gemini-gateway:main
+        restart: always
+        ports:
+          - "3000:3000"
+        volumes:
+          - ./data:/app/data
+        env_file:
+          - .env
+    ```
+
+2.  **Create and configure your `.env` file:**
+    Just like the previous method, create an `.env` file and fill in your configuration.
+
+    ```bash
+    cp .env.example .env
+    # Edit your .env file...
+    ```
+
+3.  **Start the service:**
+
+    ```bash
+    docker-compose up -d
+    ```
+
+    Docker will automatically pull the image from `ghcr.io` and start the service. This method skips the entire build process on your local machine, making deployment faster.
 
 ## 🔌 Client Usage Examples
 
@@ -80,7 +129,7 @@ For clients that support the Google Gemini API, this is the most direct way to c
     ```
     http://<your_domain_or_server_ip>:3000
     ```
-3.  Set the **API Key** to a token you created in the "Allowed API Tokens" section of the admin dashboard.
+3.  Set the **API Key** to one of the tokens you defined in the `ALLOWED_TOKENS` list in your `.env` file.
 
 ### Anthropic-Compatible Clients
 
@@ -90,8 +139,8 @@ For tools that use the Anthropic SDK (e.g., `claude-code`), you can point to thi
 # Set your gateway address
 export ANTHROPIC_BASE_URL=http://<your_domain_or_server_ip>:3000
 
-# Set the API token you created in the admin dashboard
-export ANTHROPIC_API_KEY=<your_token>
+# Set one of the tokens from your ALLOWED_TOKENS list
+export ANTHROPIC_API_KEY=<your_client_token>
 
 # Now run your tool
 claude
@@ -106,12 +155,13 @@ For general-purpose clients like LobeChat or ChatGPT-Next-Web, you can use the O
     ```
     http://<your_domain_or_server_ip>:3000/openai/v1
     ```
-3.  Set the **API Key** to one of the "Allowed API Tokens" you created in the admin dashboard.
-4.  Select a model name (e.g., `gemini-pro`) and start using it.
+3.  Set the **API Key** to one of the tokens from your `ALLOWED_TOKENS` list.
+4.  Select a model name that you have configured in the **Model Mappings** panel (e.g., `gpt-4o`). The gateway will automatically route the request to the appropriate Gemini model.
 
 ## ⚠️ Important Notes & Disclaimer
 
-- **Password Recovery**: If you forget your admin password, you can log into the Docker host server and reset it. The simplest method is to delete the database file and redeploy the container. For advanced users, you can delete the `auth_token` entry from the `Setting` table in the database, then log in to the admin dashboard to set a new password.
+- **Password Recovery**: If you forget your admin password, simply edit the `AUTH_TOKEN` in your `.env` file and restart the container (`docker-compose restart`).
+- **No More Cron Jobs**: The key health check mechanism has been refactored. The gateway now automatically disables failing keys for a short period. You no longer need to set up an external cron job.
 - **AI-Generated Code**: This project was primarily developed by an AI assistant. While it is functional, it may contain unexpected behaviors.
 - **Use at Your Own Risk**: This is an open-source project provided "as is". The authors and contributors are not responsible for any damages or losses resulting from its use, including but not to API key leakage or financial loss. Please review the code and security configurations carefully before deploying in a production environment.
 - **Contributions Welcome**: We welcome pull requests! Please note that contributions will also be reviewed by an AI.
@@ -123,3 +173,4 @@ This project is inspired by and builds upon the great work of others in the open
 - **[gemini-balance](https://github.com/snailyp/gemini-balance)** by **snailyp**: The original Python project that provided the core inspiration for this gateway.
 - **[lemmy](https://github.com/badlogic/lemmy)** by **badlogic**: For demonstrating robust and scalable application architecture.
 - **[gemini-balance-nextjs](https://github.com/jonthanliu/gemini-balance-nextjs)**: The predecessor to this project, which laid the groundwork for the current implementation.
+- **[openai-gemini](https://github.com/PublicAffairs/openai-gemini.git)** by **PublicAffairs**: A project that provides OpenAI-compatible API for Gemini models.

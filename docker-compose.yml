@@ -1,13 +1,17 @@
 version: '3.8'
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - WEB_JWT_SECRET=${WEB_JWT_SECRET}
     ports:
       - "3000:3000"
     volumes:
-      - ./local_data:/data
-    environment:
-      - DATABASE_URL=file:/app/data/gemini-balance.db
-      # Add other necessary environment variables here
+      # Mount the local data directory to the container's data directory
+      - ./data:/app/data
+    env_file:
+      # Load environment variables from a .env file
+      - .env
