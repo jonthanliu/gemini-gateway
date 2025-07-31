@@ -2,26 +2,29 @@
 
 ## 当前工作焦点
 
-- **任务**: 修复因 `@google/genai` SDK 迁移不完全而导致的 504 网关超时错误。
+- **任务**: 运行并修复项目中的单元测试，解决 `punycode` 弃用警告。
 - **状态**: 已完成。
 
 ## 近期变更
 
-- **核心 Bug 修复 (504 超时)**:
+- **单元测试修复**:
 
-  - **问题**: 在调用 Gemini API 时出现 504 网关超时，原因是 `lib/core/gemini-client.ts` 未能正确使用新的 `@google/genai` SDK。
-  - **调查**: 在多次尝试失败后，通过用户指示阅读了官方迁移文档，明确了正确的 API 调用模式。
+  - **问题**: `anthropic-to-gemini` 适配器的测试套件完全失败，报错为 `TypeError: Cannot read properties of undefined (reading 'system')`。
+  - **调查**: 通过检查失败的测试和相关的适配器代码，发现 `transformRequest` 函数签名需要两个参数 (`model`, `request`)，但在测试中只传递了一个。
   - **根本原因**:
-    1.  `gemini-client` 使用了错误的客户端实例化方法 (`new GoogleGenAI("key")` 而不是 `new GoogleGenAI({apiKey: "key"})`)。
-    2.  `gemini-client` 使用了错误的模型调用方法 (先获取模型实例再调用，而不是直接在 `ai.models` 服务上调用)。
-    3.  数据流源头 (`gemini-to-gemini` 适配器) 没有将模型名称正确地注入到请求体中。
+    1.  对 `transformRequest` 的调用缺少 `model` 参数，导致函数内的 `request` 参数变为 `undefined`。
+    2.  修复上述问题后，发现 `systemInstruction` 的构建缺少 `role: 'user'` 属性，导致断言失败。
   - **解决方案**:
-    1.  修改了 `lib/adapters/gemini-to-gemini.ts` 中的 `transformRequest`，使其将 `model` 名称合并到请求对象中。
-    2.  重构了 `lib/core/gemini-client.ts` 中的 `attemptRequest` 和 `executeRequest` 方法，移除了冗余的 `model` 参数，并采用了正确的、基于文档的 SDK 调用方式。
+    1.  修改了 `__tests__/lib/adapters/anthropic-to-gemini.test.ts` 中对 `transformRequest` 的所有调用，以传递正确的参数。
+    2.  在 `lib/adapters/anthropic-to-gemini.ts` 中，为 `systemInstruction` 对象添加了 `role: "user"` 属性。
+  - **结果**: 所有 41 个单元测试现在都已通过。
 
-- **Bug 修复 (系列)**:
-  - **问题 1**: 修复了在 `app/(api)/gemini/v1beta/models/[model]/route.ts` 中由于 `@google/genai` SDK 迁移导致的编译错误。
-  - **问题 2**: 修复了在 `lib/stream-utils.ts` 中由于残留的旧 SDK 导入而导致的编译错误。
+- **处理弃用警告**:
+  - **问题**: 测试日志中出现 `DeprecationWarning: The 'punycode' module is deprecated`。
+  - **尝试的解决方案**:
+    1.  将 `punycode` 添加为直接依赖项。
+    2.  使用 pnpm 的 `overrides` 强制解析 `punycode`。
+  - **结果**: 警告仍然存在，表明它源自一个深层的传递依赖项。由于警告是非关键性的，并且所有测试都通过，因此决定将此问题记录在案，暂不进一步处理。
 
 ## 下一步
 
@@ -31,3 +34,4 @@
 
 - **文档优先**: 在开始编码之前，确保相关的记忆库文档已经建立或更新。
 - **原子化提交**: 倾向于小而集中的 Git 提交，每个提交都与一个明确的任务相关联。
+- **回归测试**: 在进行任何修复后，运行完整的测试套件以确保没有引入新的问题。
