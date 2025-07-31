@@ -1,5 +1,65 @@
 import logger from "@/lib/logger";
-import type { GenerateContentResponse } from "@google/genai";
+import * as Anthropic from "@anthropic-ai/sdk/resources/messages";
+import type { GenerateContentResponse, Part } from "@google/genai";
+
+/**
+ * Transforms a Gemini API response to an Anthropic-compatible format.
+ * @param geminiResponse The response from the Gemini API.
+ * @param model The model name used for the request.
+ * @returns An Anthropic Message object.
+ */
+export function transformResponse(
+  geminiResponse: GenerateContentResponse,
+  model: string
+): Anthropic.Messages.Message {
+  const messageId = `msg_${Date.now().toString(36)}`;
+  const candidate = geminiResponse.candidates?.[0];
+
+  if (!candidate) {
+    throw new Error("No candidates found in Gemini response");
+  }
+
+  const content: Anthropic.ContentBlock[] =
+    candidate.content?.parts
+      ?.map((part: Part): Anthropic.ContentBlock | null => {
+        if (part.text) {
+          return { type: "text", text: part.text, citations: [] };
+        }
+        if (part.functionCall) {
+          return {
+            type: "tool_use",
+            id: part.functionCall.name || "",
+            name: part.functionCall.name || "",
+            input: part.functionCall.args || {},
+          };
+        }
+        return null;
+      })
+      .filter((c): c is Anthropic.ContentBlock => c !== null) || [];
+
+  const stopReason =
+    (candidate.finishReason as string) === "TOOL_CALL"
+      ? "tool_use"
+      : "end_turn";
+
+  const res = {
+    id: messageId,
+    type: "message",
+    role: "assistant",
+    content: content,
+    model: model,
+    stop_reason: stopReason as Anthropic.Messages.Message["stop_reason"],
+    stop_sequence: null,
+    usage: {
+      input_tokens: geminiResponse.usageMetadata?.promptTokenCount ?? 0,
+      output_tokens: geminiResponse.usageMetadata?.candidatesTokenCount ?? 0,
+    } as Anthropic.Messages.Message["usage"],
+  } as Anthropic.Messages.Message;
+
+  console.log(`AnthropicMessage:`, res);
+
+  return res;
+}
 
 /**
  * Converts a Gemini API stream to an Anthropic-compatible SSE stream.

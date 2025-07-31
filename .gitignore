@@ -56,3 +56,5 @@ next-env.d.ts
 /prisma/schema.prisma.bak
 /.claude
 /data
+/.serena
+/db

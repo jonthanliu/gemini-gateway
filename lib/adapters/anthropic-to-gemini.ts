@@ -47,10 +47,11 @@ function cleanSchema<T>(schema: T): T {
 
 // --- Standardized Adapter Functions ---
 export function transformRequest(
+  model: string,
   request: Anthropic.MessageCreateParams
 ): GenerateContentParameters {
   const geminiRequest: GenerateContentParameters = {
-    model: request.model,
+    model: model,
     contents: [],
     config: {},
   };
@@ -155,7 +156,7 @@ export function transformResponse(
     }
   }
 
-  return {
+  const res = {
     id: `msg-${Date.now()}`,
     type: "message",
     role: "assistant",
@@ -166,7 +167,9 @@ export function transformResponse(
       input_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
       output_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
     },
-  };
+  } as AnthropicMessage;
+
+  return res;
 }
 
 export async function* transformStream(

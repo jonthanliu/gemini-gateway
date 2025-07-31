@@ -11,7 +11,10 @@ describe("Anthropic to Gemini Adapter", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = transformRequest(anthropicRequest);
+    const geminiRequest = transformRequest(
+      anthropicRequest.model,
+      anthropicRequest
+    );
 
     expect(geminiRequest.contents).toEqual([
       {
@@ -30,7 +33,10 @@ describe("Anthropic to Gemini Adapter", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = transformRequest(anthropicRequest);
+    const geminiRequest = transformRequest(
+      anthropicRequest.model,
+      anthropicRequest
+    );
 
     expect(geminiRequest.config?.systemInstruction).toEqual({
       role: "user",
@@ -49,7 +55,10 @@ describe("Anthropic to Gemini Adapter", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = transformRequest(anthropicRequest);
+    const geminiRequest = transformRequest(
+      anthropicRequest.model,
+      anthropicRequest
+    );
 
     expect((geminiRequest.contents as Content[])[0].role).toBe("user");
     expect((geminiRequest.contents as Content[])[1].role).toBe("model");
@@ -77,7 +86,10 @@ describe("Anthropic to Gemini Adapter", () => {
       max_tokens: 1024,
     };
 
-    const geminiRequest = transformRequest(anthropicRequest);
+    const geminiRequest = transformRequest(
+      anthropicRequest.model,
+      anthropicRequest
+    );
 
     expect((geminiRequest.contents as Content[])[0].parts).toHaveLength(2);
     expect((geminiRequest.contents as Content[])[0].parts).toContainEqual({

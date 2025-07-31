@@ -1,12 +1,11 @@
+import { transformRequest } from "@/lib/adapters/anthropic-to-gemini";
 import {
-  transformRequest,
+  streamGeminiToAnthropic,
   transformResponse,
-  transformStream,
-} from "@/lib/adapters/anthropic-to-gemini";
+} from "@/lib/adapters/gemini-to-anthropic";
 import { geminiClient } from "@/lib/core/gemini-client";
 import logger from "@/lib/logger";
 import { modelMappingService } from "@/lib/services/model-mapping.service";
-import { iteratorToStream } from "@/lib/stream-utils";
 import * as Anthropic from "@anthropic-ai/sdk/resources/messages";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,15 +34,22 @@ export async function POST(req: NextRequest) {
     }
 
     const geminiModelName = mapping.target_name;
-    const geminiRequest = transformRequest(anthropicRequest);
+    const geminiRequest = transformRequest(geminiModelName, anthropicRequest);
 
     if (mapping.target_method === "streamGenerateContent") {
+      logger.info(
+        {
+          target_model: geminiModelName,
+          target_method: "streamGenerateContent",
+        },
+        `[Anthropic-Debug] Sending stream request to Gemini.`
+      );
       const geminiStream = await geminiClient.streamGenerateContent(
         geminiModelName,
         geminiRequest
       );
-      const anthropicStream = transformStream(geminiStream);
-      const readableStream = iteratorToStream(anthropicStream);
+      logger.info(`[Anthropic-Debug] Successfully initiated stream from Gemini.`);
+      const readableStream = streamGeminiToAnthropic(geminiStream);
 
       return new NextResponse(readableStream, {
         status: 200,
@@ -55,10 +61,18 @@ export async function POST(req: NextRequest) {
         },
       });
     } else {
+      logger.info(
+        {
+          target_model: geminiModelName,
+          target_method: "generateContent",
+        },
+        `[Anthropic-Debug] Sending content request to Gemini.`
+      );
       const geminiResult = await geminiClient.generateContent(
         geminiModelName,
         geminiRequest
       );
+      logger.info(`[Anthropic-Debug] Successfully received response from Gemini.`);
       const anthropicResponse = transformResponse(
         geminiResult,
         geminiModelName
@@ -66,9 +80,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(anthropicResponse, { status: 200 });
     }
   } catch (error) {
+    logger.error({ error }, "[Anthropic-Debug] Unhandled error");
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred.";
-    logger.error({ error: errorMessage }, "[Anthropic Bridge] Unhandled error");
     return NextResponse.json(
       {
         type: "error",
