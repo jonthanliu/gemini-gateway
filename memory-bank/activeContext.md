@@ -2,29 +2,36 @@
 
 ## 当前工作焦点
 
-- **任务**: 运行并修复项目中的单元测试，解决 `punycode` 弃用警告。
+- **任务**: 分析并实现可配置的 API 请求重试策略。
 - **状态**: 已完成。
 
 ## 近期变更
 
-- **单元测试修复**:
+1.  **系统策略深度分析**:
 
-  - **问题**: `anthropic-to-gemini` 适配器的测试套件完全失败，报错为 `TypeError: Cannot read properties of undefined (reading 'system')`。
-  - **调查**: 通过检查失败的测试和相关的适配器代码，发现 `transformRequest` 函数签名需要两个参数 (`model`, `request`)，但在测试中只传递了一个。
-  - **根本原因**:
-    1.  对 `transformRequest` 的调用缺少 `model` 参数，导致函数内的 `request` 参数变为 `undefined`。
-    2.  修复上述问题后，发现 `systemInstruction` 的构建缺少 `role: 'user'` 属性，导致断言失败。
-  - **解决方案**:
-    1.  修改了 `__tests__/lib/adapters/anthropic-to-gemini.test.ts` 中对 `transformRequest` 的所有调用，以传递正确的参数。
-    2.  在 `lib/adapters/anthropic-to-gemini.ts` 中，为 `systemInstruction` 对象添加了 `role: "user"` 属性。
-  - **结果**: 所有 41 个单元测试现在都已通过。
+    - 对比分析了本项目 (`gemini-gateway`) 与一个基于 Python 的旧项目 (`gemini-balance`) 在 API 密钥管理和容错策略上的异同。
+    - **结论**: 本项目采用的无状态、数据库驱动、随机选择和基于时间窗口的重试机制，相比旧项目的有状态、内存型、顺序轮询机制，在健壮性、可扩展性和容错能力上均有质的提升。
 
-- **处理弃用警告**:
-  - **问题**: 测试日志中出现 `DeprecationWarning: The 'punycode' module is deprecated`。
-  - **尝试的解决方案**:
-    1.  将 `punycode` 添加为直接依赖项。
-    2.  使用 pnpm 的 `overrides` 强制解析 `punycode`。
-  - **结果**: 警告仍然存在，表明它源自一个深层的传递依赖项。由于警告是非关键性的，并且所有测试都通过，因此决定将此问题记录在案，暂不进一步处理。
+2.  **后端重构 - 实现可配置的重试参数**:
+
+    - **问题**: `gemini-client.ts` 中的重试延迟 (`RETRY_DELAY_MS`) 和重试时间窗口 (`MAX_RETRY_DURATION_MS`) 是硬编码的常量，缺乏灵活性。
+    - **解决方案**:
+      - 在 `lib/config/settings.ts` 中，将这两个参数添加为系统默认配置，并更新了 `ParsedSettings` 类型和 `parseSettings` 函数以支持它们。
+      - 修改了 `lib/core/gemini-client.ts`，移除了硬编码的常量，改为在 `executeRequest` 方法中通过 `getSettings()` 动态获取这些值。
+    - **结果**: 重试策略现在可以通过管理后台进行动态配置，无需重新部署代码。
+
+3.  **前端实现 - 添加配置界面**:
+
+    - **问题**: 后端增加了新的可配置项，但前端管理界面没有提供对应的 UI。
+    - **解决方案**:
+      - 修改了 `app/(web)/[lang]/admin/components/ConfigForm.tsx`，在“密钥 & 模型”标签页下添加了用于设置“重试延迟”和“重试时间窗口”的输入框。
+      - 更新了组件的 `FormState` 类型以正确处理这些新字段（从 `number` 到 `string` 的转换）。
+      - 更新了 `handleSubmit` 函数，以确保在保存时将这些值转换回 `number` 类型。
+      - 在 `dictionaries/en.json` 和 `dictionaries/zh.json` 中添加了对应的国际化标签和占位符文本。
+    - **结果**: 管理员现在可以通过一个直观的界面来修改和保存新的重试策略参数。
+
+4.  **确认变更立即生效**:
+    - 通过分析 `updateSettingsAction` 和 `resetSettings` 函数，确认了当管理员保存新配置时，后端的设置缓存会立即失效，确保所有后续请求都会使用最新的配置值。
 
 ## 下一步
 
@@ -32,6 +39,6 @@
 
 ## 重要模式和偏好
 
-- **文档优先**: 在开始编码之前，确保相关的记忆库文档已经建立或更新。
-- **原子化提交**: 倾向于小而集中的 Git 提交，每个提交都与一个明确的任务相关联。
-- **回归测试**: 在进行任何修复后，运行完整的测试套件以确保没有引入新的问题。
+- **全栈思维**: 在进行后端更改时，会立即考虑其对前端的影响，并主动实现相应的 UI/UX 变更。
+- **配置驱动开发**: 倾向于将可变参数（如重试延迟）从代码中提取到配置中，以提高系统的灵活性和可维护性。
+- **文档驱动**: 在完成重大功能或分析后，会立即更新记忆库，以确保项目文档的准确性和时效性。
