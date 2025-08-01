@@ -107,8 +107,16 @@
                     "description": "用逗号或换行符分隔的客户端令牌列表。"
                 },
                 "maxFailures": {
-                    "label": "最大密钥失败次数",
-                    "placeholder": "密钥停用前的失败次数"
+                    "label": "最大失败次数",
+                    "placeholder": "输入最大失败次数"
+                },
+                "retryDelay": {
+                    "label": "重试延迟 (秒)",
+                    "placeholder": "输入重试延迟秒数"
+                },
+                "retryDuration": {
+                    "label": "重试时间窗口 (秒)",
+                    "placeholder": "输入最大重试时间窗口秒数"
                 },
                 "healthCheckModel": {
                     "label": "健康检查模型",

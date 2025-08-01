@@ -8,10 +8,11 @@ let settingsCache: ParsedSettings | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-
 // 定义默认配置
 export const defaultSettings = {
   MAX_FAILURES: "3",
+  RETRY_DELAY_MS: "5000",
+  MAX_RETRY_DURATION_MS: "30000",
   HEALTH_CHECK_MODEL: "gemini-1.5-flash",
   PROXY_URL: "", // Optional proxy URL
   // Booleans are stored as strings "true" or "false"
@@ -31,6 +32,8 @@ export type ParsedSettings = {
   AUTH_TOKEN: string;
   ALLOWED_TOKENS: string;
   MAX_FAILURES: number;
+  RETRY_DELAY_MS: number;
+  MAX_RETRY_DURATION_MS: number;
   HEALTH_CHECK_MODEL: string;
   PROXY_URL: string;
   TOOLS_CODE_EXECUTION_ENABLED: boolean;
@@ -81,7 +84,9 @@ export async function unstable_getSettings(): Promise<ParsedSettings> {
 
   const resolvedSettings: Settings = { ...defaultSettings };
 
-  for (const key of Object.keys(defaultSettings) as (keyof typeof defaultSettings)[]) {
+  for (const key of Object.keys(
+    defaultSettings
+  ) as (keyof typeof defaultSettings)[]) {
     const dbValue = settingsMap.get(key);
     if (dbValue !== undefined) {
       resolvedSettings[key] = dbValue;
@@ -105,14 +110,34 @@ export async function unstable_getSettings(): Promise<ParsedSettings> {
 function parseSettings(settings: Settings): ParsedSettings {
   const maxFailures = parseInt(settings.MAX_FAILURES, 10);
   if (isNaN(maxFailures)) {
-    logger.warn(`Invalid MAX_FAILURES value: "${settings.MAX_FAILURES}". Defaulting to 3.`);
+    logger.warn(
+      `Invalid MAX_FAILURES value: "${settings.MAX_FAILURES}". Defaulting to 3.`
+    );
     settings.MAX_FAILURES = "3";
+  }
+
+  const retryDelayMs = parseInt(settings.RETRY_DELAY_MS, 10);
+  if (isNaN(retryDelayMs)) {
+    logger.warn(
+      `Invalid RETRY_DELAY_MS value: "${settings.RETRY_DELAY_MS}". Defaulting to 5000.`
+    );
+    settings.RETRY_DELAY_MS = "5000";
+  }
+
+  const maxRetryDurationMs = parseInt(settings.MAX_RETRY_DURATION_MS, 10);
+  if (isNaN(maxRetryDurationMs)) {
+    logger.warn(
+      `Invalid MAX_RETRY_DURATION_MS value: "${settings.MAX_RETRY_DURATION_MS}". Defaulting to 30000.`
+    );
+    settings.MAX_RETRY_DURATION_MS = "30000";
   }
 
   return {
     AUTH_TOKEN: settings.AUTH_TOKEN || "",
     ALLOWED_TOKENS: settings.ALLOWED_TOKENS || "",
     MAX_FAILURES: parseInt(settings.MAX_FAILURES, 10),
+    RETRY_DELAY_MS: parseInt(settings.RETRY_DELAY_MS, 10),
+    MAX_RETRY_DURATION_MS: parseInt(settings.MAX_RETRY_DURATION_MS, 10),
     HEALTH_CHECK_MODEL: settings.HEALTH_CHECK_MODEL,
     PROXY_URL: settings.PROXY_URL,
     TOOLS_CODE_EXECUTION_ENABLED:
@@ -121,7 +146,6 @@ function parseSettings(settings: Settings): ParsedSettings {
     THINKING_BUDGET_MAP: JSON.parse(settings.THINKING_BUDGET_MAP),
   };
 }
-
 
 /**
  * 清空配置缓存。

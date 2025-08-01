@@ -107,8 +107,16 @@
                     "description": "Comma or newline separated list of client tokens."
                 },
                 "maxFailures": {
-                    "label": "Max Key Failures",
-                    "placeholder": "Failures before a key is deactivated"
+                    "label": "Max Failures",
+                    "placeholder": "Enter max failures"
+                },
+                "retryDelay": {
+                    "label": "Retry Delay (s)",
+                    "placeholder": "Enter retry delay in seconds"
+                },
+                "retryDuration": {
+                    "label": "Retry Duration (s)",
+                    "placeholder": "Enter max retry duration in seconds"
                 },
                 "healthCheckModel": {
                     "label": "Health Check Model",

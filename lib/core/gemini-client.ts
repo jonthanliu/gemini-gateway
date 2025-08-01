@@ -29,9 +29,6 @@ export class RequestTimeoutError extends Error {
 }
 
 export class GeminiClient {
-  private readonly MAX_RETRY_DURATION_MS = 30000; // 60 seconds
-  private readonly RETRY_DELAY_MS = 5000; // 5 seconds
-
   constructor() {
     // Constructor can be expanded later for dependency injection
   }
@@ -63,9 +60,10 @@ export class GeminiClient {
   ): Promise<
     GenerateContentResponse | AsyncGenerator<GenerateContentResponse>
   > {
+    const { MAX_RETRY_DURATION_MS, RETRY_DELAY_MS } = await getSettings();
     const startTime = Date.now();
 
-    while (Date.now() - startTime < this.MAX_RETRY_DURATION_MS) {
+    while (Date.now() - startTime < MAX_RETRY_DURATION_MS) {
       let apiKey: string;
       try {
         apiKey = await getNextWorkingKey();
@@ -96,12 +94,10 @@ export class GeminiClient {
           Date.now() - attemptStartTime
         );
 
-        if (Date.now() - startTime >= this.MAX_RETRY_DURATION_MS) {
+        if (Date.now() - startTime >= MAX_RETRY_DURATION_MS) {
           break;
         }
-        await new Promise((resolve) =>
-          setTimeout(resolve, this.RETRY_DELAY_MS)
-        );
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       }
     }
 

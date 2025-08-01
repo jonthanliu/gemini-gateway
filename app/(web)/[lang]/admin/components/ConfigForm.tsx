@@ -20,10 +20,15 @@ interface ConfigFormProps {
 // Use a different type for form state to handle JSON as strings
 type FormState = Omit<
   ParsedSettings,
-  "SAFETY_SETTINGS" | "THINKING_BUDGET_MAP"
+  | "SAFETY_SETTINGS"
+  | "THINKING_BUDGET_MAP"
+  | "RETRY_DELAY_MS"
+  | "MAX_RETRY_DURATION_MS"
 > & {
   SAFETY_SETTINGS: string;
   THINKING_BUDGET_MAP: string;
+  RETRY_DELAY_MS: string;
+  MAX_RETRY_DURATION_MS: string;
 };
 
 export function ConfigForm({ settings }: ConfigFormProps) {
@@ -32,6 +37,8 @@ export function ConfigForm({ settings }: ConfigFormProps) {
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<FormState>({
     ...settings,
+    RETRY_DELAY_MS: String(settings.RETRY_DELAY_MS / 1000),
+    MAX_RETRY_DURATION_MS: String(settings.MAX_RETRY_DURATION_MS / 1000),
     AUTH_TOKEN: "", // Don't pre-fill for security
     SAFETY_SETTINGS: JSON.stringify(settings.SAFETY_SETTINGS, null, 2),
     THINKING_BUDGET_MAP: JSON.stringify(settings.THINKING_BUDGET_MAP, null, 2),
@@ -53,6 +60,8 @@ export function ConfigForm({ settings }: ConfigFormProps) {
         const dataToSave: ParsedSettings = {
           ...formData,
           MAX_FAILURES: Number(formData.MAX_FAILURES),
+          RETRY_DELAY_MS: Number(formData.RETRY_DELAY_MS) * 1000,
+          MAX_RETRY_DURATION_MS: Number(formData.MAX_RETRY_DURATION_MS) * 1000,
           SAFETY_SETTINGS: JSON.parse(formData.SAFETY_SETTINGS),
           THINKING_BUDGET_MAP: JSON.parse(formData.THINKING_BUDGET_MAP),
         };
@@ -112,6 +121,28 @@ export function ConfigForm({ settings }: ConfigFormProps) {
               value={formData.MAX_FAILURES}
               onChange={handleInputChange}
               placeholder={dict.maxFailures.placeholder}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="RETRY_DELAY_MS">{dict.retryDelay.label}</Label>
+            <Input
+              id="RETRY_DELAY_MS"
+              type="number"
+              value={formData.RETRY_DELAY_MS}
+              onChange={handleInputChange}
+              placeholder={dict.retryDelay.placeholder}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="MAX_RETRY_DURATION_MS">
+              {dict.retryDuration.label}
+            </Label>
+            <Input
+              id="MAX_RETRY_DURATION_MS"
+              type="number"
+              value={formData.MAX_RETRY_DURATION_MS}
+              onChange={handleInputChange}
+              placeholder={dict.retryDuration.placeholder}
             />
           </div>
           <div className="space-y-2">
