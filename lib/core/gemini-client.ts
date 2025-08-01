@@ -5,7 +5,7 @@ import {
   handleApiFailure,
   resetKeyStatus,
 } from "@/lib/services/key.service";
-import { logRequest } from "@/lib/services/logging.service";
+import { logError, logRequest } from "@/lib/services/logging.service";
 import {
   GenerateContentParameters,
   GenerateContentResponse,
@@ -75,10 +75,14 @@ export class GeminiClient {
       }
 
       const attemptStartTime = Date.now();
+      let isSuccess = false;
+      let statusCode = 500; // Default to error status
+
       try {
         const result = await this.attemptRequest(apiKey, request, isStream);
         await resetKeyStatus(apiKey);
-        logRequest(apiKey, modelName, 200, true, Date.now() - attemptStartTime);
+        isSuccess = true;
+        statusCode = 200;
         return result;
       } catch (error) {
         logger.warn(
@@ -86,18 +90,27 @@ export class GeminiClient {
           "Request attempt failed."
         );
         await handleApiFailure(apiKey);
-        logRequest(
+        const errorDetails =
+          error instanceof Error ? error.stack : JSON.stringify(error);
+        logError(
           apiKey,
-          modelName,
-          500,
-          false,
-          Date.now() - attemptStartTime
+          error instanceof Error ? error.name : "UnknownError",
+          error instanceof Error ? error.message : "An unknown error occurred.",
+          errorDetails
         );
 
         if (Date.now() - startTime >= MAX_RETRY_DURATION_MS) {
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      } finally {
+        logRequest(
+          apiKey,
+          modelName,
+          statusCode,
+          isSuccess,
+          Date.now() - attemptStartTime
+        );
       }
     }
 
