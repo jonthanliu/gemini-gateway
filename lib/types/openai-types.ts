@@ -1,13 +1,37 @@
 // src/lib/types/openai-types.ts
 
+export interface OpenAITool {
+  type: "function";
+  function: {
+    name: string;
+    description?: string;
+    parameters: object;
+  };
+}
+
+export interface OpenAIToolCall {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
 export interface OpenAIChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string | null;
+  tool_calls?: OpenAIToolCall[];
 }
 
 export interface OpenAIChatCompletionRequest {
   model: string;
   messages: OpenAIChatMessage[];
+  tools?: OpenAITool[];
+  tool_choice?:
+    | "auto"
+    | "none"
+    | { type: "function"; function: { name: string } };
   temperature?: number;
   top_p?: number;
   max_tokens?: number;

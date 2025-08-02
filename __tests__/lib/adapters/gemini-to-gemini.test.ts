@@ -12,13 +12,17 @@ import { describe, expect, it } from "vitest";
 
 describe("Gemini to Gemini Adapter", () => {
   describe("transformRequest", () => {
-    it("should return the original request body", async () => {
+    it("should add a config object if none is provided", async () => {
       const requestBody: GenerateContentParameters = {
         model: "gemini-pro",
         contents: [{ role: "user", parts: [{ text: "Hello" }] }],
       };
       const result = await transformRequest("gemini-pro", requestBody);
-      expect(result).toEqual(requestBody);
+      const expected = {
+        ...requestBody,
+        config: {},
+      };
+      expect(result).toEqual(expected);
     });
   });
 
