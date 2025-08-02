@@ -7,10 +7,11 @@ import {
 } from "@/lib/services/key.service";
 import { logError, logRequest } from "@/lib/services/logging.service";
 import {
-  GenerateContentParameters,
-  GenerateContentResponse,
-  GoogleGenAI,
-} from "@google/genai";
+  EnhancedGenerateContentResponse,
+  GenerateContentRequest,
+  GenerateContentResult,
+  GoogleGenerativeAI,
+} from "@google/generative-ai";
 import { getSettings } from "../config/settings";
 
 // Custom error classes for specific failure scenarios
@@ -35,31 +36,29 @@ export class GeminiClient {
 
   public async generateContent(
     model: string,
-    request: GenerateContentParameters
-  ): Promise<GenerateContentResponse> {
+    request: GenerateContentRequest
+  ): Promise<GenerateContentResult> {
     return this.executeRequest(
       model,
       request,
       false
-    ) as Promise<GenerateContentResponse>;
+    ) as Promise<GenerateContentResult>;
   }
 
   public async streamGenerateContent(
     model: string,
-    request: GenerateContentParameters
-  ): Promise<AsyncGenerator<GenerateContentResponse>> {
+    request: GenerateContentRequest
+  ): Promise<AsyncGenerator<GenerateContentResult>> {
     return this.executeRequest(model, request, true) as Promise<
-      AsyncGenerator<GenerateContentResponse>
+      AsyncGenerator<GenerateContentResult>
     >;
   }
 
   private async executeRequest(
     modelName: string,
-    request: GenerateContentParameters,
+    request: GenerateContentRequest,
     isStream: boolean
-  ): Promise<
-    GenerateContentResponse | AsyncGenerator<GenerateContentResponse>
-  > {
+  ): Promise<GenerateContentResult | AsyncGenerator<GenerateContentResult>> {
     const { MAX_RETRY_DURATION_MS, RETRY_DELAY_MS } = await getSettings();
     const startTime = Date.now();
 
@@ -79,7 +78,12 @@ export class GeminiClient {
       let statusCode = 500; // Default to error status
 
       try {
-        const result = await this.attemptRequest(apiKey, request, isStream);
+        const result = await this.attemptRequest(
+          apiKey,
+          modelName,
+          request,
+          isStream
+        );
         await resetKeyStatus(apiKey);
         isSuccess = true;
         statusCode = 200;
@@ -119,19 +123,28 @@ export class GeminiClient {
 
   private async attemptRequest(
     apiKey: string,
-    request: GenerateContentParameters,
+    model: string, // Add model parameter here
+    request: GenerateContentRequest,
     isStream: boolean
-  ): Promise<
-    GenerateContentResponse | AsyncGenerator<GenerateContentResponse>
-  > {
+  ): Promise<GenerateContentResult | AsyncGenerator<GenerateContentResult>> {
     await getSettings();
 
-    const genAI = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const generativeModel = genAI.getGenerativeModel({ model });
 
     if (isStream) {
-      return genAI.models.generateContentStream(request);
+      const streamResult = await generativeModel.generateContentStream(request);
+      return this.transformStream(streamResult.stream);
     } else {
-      return genAI.models.generateContent(request);
+      return generativeModel.generateContent(request);
+    }
+  }
+
+  private async *transformStream(
+    stream: AsyncGenerator<EnhancedGenerateContentResponse>
+  ): AsyncGenerator<GenerateContentResult> {
+    for await (const chunk of stream) {
+      yield { response: chunk };
     }
   }
 }

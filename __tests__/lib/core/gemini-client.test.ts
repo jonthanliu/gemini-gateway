@@ -1,5 +1,5 @@
 import { GeminiClient } from "@/lib/core/gemini-client";
-import { GenerateContentResponse } from "@google/genai";
+import { GenerateContentResult } from "@google/generative-ai";
 import { describe, expect, it, MockedFunction, vi } from "vitest";
 
 // Mock the dependencies
@@ -13,15 +13,15 @@ vi.mock("@/lib/services/logging.service", () => ({
   logRequest: vi.fn(),
 }));
 
-vi.mock("@google/genai", () => {
+vi.mock("@google/generative-ai", () => {
   const mockGenerateContent = vi.fn();
   const mockGenerateContentStream = vi.fn();
   return {
-    GoogleGenAI: vi.fn(() => ({
-      models: {
+    GoogleGenerativeAI: vi.fn(() => ({
+      getGenerativeModel: vi.fn(() => ({
         generateContent: mockGenerateContent,
         generateContentStream: mockGenerateContentStream,
-      },
+      })),
     })),
   };
 });
@@ -35,7 +35,6 @@ describe("GeminiClient", () => {
     const client = new GeminiClient();
     const model = "gemini-pro";
     const request = {
-      model,
       contents: [{ role: "user", parts: [{ text: "Hello" }] }],
     };
 
@@ -47,15 +46,18 @@ describe("GeminiClient", () => {
       >
     ).mockResolvedValue("test-api-key");
 
-    const genai = await import("@google/genai");
-    const mockGenerateContent = new genai.GoogleGenAI({}).models
-      .generateContent;
+    const generativeAi = await import("@google/generative-ai");
+    const mockGenerateContent = new generativeAi.GoogleGenerativeAI(
+      ""
+    ).getGenerativeModel({ model: "" }).generateContent;
     (
       mockGenerateContent as MockedFunction<typeof mockGenerateContent>
     ).mockResolvedValue({
-      candidates: [],
-      usageMetadata: {},
-    } as unknown as GenerateContentResponse);
+      response: {
+        candidates: [],
+        usageMetadata: {},
+      },
+    } as unknown as GenerateContentResult);
 
     await client.generateContent(model, request);
 

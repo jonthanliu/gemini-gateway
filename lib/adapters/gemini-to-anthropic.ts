@@ -1,6 +1,6 @@
 import logger from "@/lib/logger";
 import * as Anthropic from "@anthropic-ai/sdk/resources/messages";
-import type { GenerateContentResponse, Part } from "@google/genai";
+import type { GenerateContentResult, Part } from "@google/generative-ai";
 
 /**
  * Transforms a Gemini API response to an Anthropic-compatible format.
@@ -9,11 +9,11 @@ import type { GenerateContentResponse, Part } from "@google/genai";
  * @returns An Anthropic Message object.
  */
 export function transformResponse(
-  geminiResponse: GenerateContentResponse,
+  geminiResponse: GenerateContentResult,
   model: string
 ): Anthropic.Messages.Message {
   const messageId = `msg_${Date.now().toString(36)}`;
-  const candidate = geminiResponse.candidates?.[0];
+  const candidate = geminiResponse.response.candidates?.[0];
 
   if (!candidate) {
     throw new Error("No candidates found in Gemini response");
@@ -51,8 +51,10 @@ export function transformResponse(
     stop_reason: stopReason as Anthropic.Messages.Message["stop_reason"],
     stop_sequence: null,
     usage: {
-      input_tokens: geminiResponse.usageMetadata?.promptTokenCount ?? 0,
-      output_tokens: geminiResponse.usageMetadata?.candidatesTokenCount ?? 0,
+      input_tokens:
+        geminiResponse.response.usageMetadata?.promptTokenCount ?? 0,
+      output_tokens:
+        geminiResponse.response.usageMetadata?.candidatesTokenCount ?? 0,
     } as Anthropic.Messages.Message["usage"],
   } as Anthropic.Messages.Message;
 
@@ -65,7 +67,7 @@ export function transformResponse(
  * @returns A ReadableStream in the Anthropic SSE format.
  */
 export function streamGeminiToAnthropic(
-  geminiStream: AsyncIterable<GenerateContentResponse>
+  geminiStream: AsyncIterable<GenerateContentResult>
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   const messageId = `msg_${Date.now().toString(36)}`;
@@ -101,14 +103,14 @@ export function streamGeminiToAnthropic(
       let totalOutputTokens = 0;
       let finalStopReason = null;
 
-      let chunk: GenerateContentResponse | undefined;
+      let chunk: GenerateContentResult | undefined;
       try {
         for await (chunk of geminiStream) {
-          const candidate = chunk.candidates?.[0];
+          const candidate = chunk.response.candidates?.[0];
           if (!candidate) continue;
 
           const chunkOutputTokens =
-            chunk.usageMetadata?.candidatesTokenCount || 0;
+            chunk.response.usageMetadata?.candidatesTokenCount || 0;
           totalOutputTokens += chunkOutputTokens;
 
           if (chunkOutputTokens > 0) {

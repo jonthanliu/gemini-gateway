@@ -14,11 +14,11 @@ The application is built with the Next.js App Router, TypeScript, and uses Drizz
   - OpenAI compatibility: `app/(api)/openai/v1/`
   - Anthropic compatibility: `app/(api)/anthropic/v1/`
   - Native Gemini: `app/(api)/gemini/v1/`
-- **WebApp Routes**: The frontend admin dashboard is located under the `app/(webapp)` route group. All WebApp routes are automatically prefixed with a language code (e.g., `/en/...`) by the middleware.
+- **WebApp Routes**: The frontend admin dashboard is located under the `app/(web)` route group. All WebApp routes are automatically prefixed with a language code (e.g., `/en/...`) by the middleware.
 - **Key Management**: The `lib/services/key.service.ts` is responsible for managing the pool of Gemini API keys, including selection, load balancing, and tracking failures.
 - **Configuration**: Application settings are managed through `lib/config/settings.ts` and can be configured dynamically via the admin dashboard.
 - **Database**: The project uses SQLite with Drizzle ORM. The schema is defined in `lib/db/schema.ts`, and migrations are handled by `drizzle-kit`.
-- **Admin Dashboard**: A React-based UI under `app/(webapp)/[lang]/admin/` allows for real-time management of API keys, settings, and viewing logs.
+- **Admin Dashboard**: A React-based UI under `app/(web)/[lang]/admin/` allows for real-time management of API keys, settings, and viewing logs.
 - **Authentication**: A central middleware at `./middleware.ts` protects all non-public routes. It handles both API token validation and WebApp cookie-based authentication.
 
 ## Common Development Commands

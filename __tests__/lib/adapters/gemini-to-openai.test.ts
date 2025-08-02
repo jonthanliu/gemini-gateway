@@ -2,26 +2,28 @@ import {
   streamGeminiToOpenAI,
   transformGeminiResponseToOpenAI,
 } from "@/lib/adapters/gemini-to-openai";
-import type { GenerateContentResponse } from "@google/genai";
-import { FinishReason } from "@google/genai";
+import type { GenerateContentResult } from "@google/generative-ai";
+import { FinishReason } from "@google/generative-ai";
 import { describe, expect, it } from "vitest";
 
 describe("Gemini to OpenAI Adapter", () => {
   describe("transformGeminiResponseToOpenAI", () => {
     it("should transform a Gemini result to an OpenAI chat completion object", () => {
-      const geminiResult: GenerateContentResponse = {
-        candidates: [
-          {
-            content: {
-              role: "model",
-              parts: [{ text: "Hello from Gemini!" }],
+      const geminiResult: GenerateContentResult = {
+        response: {
+          candidates: [
+            {
+              content: {
+                role: "model",
+                parts: [{ text: "Hello from Gemini!" }],
+              },
+              finishReason: FinishReason.STOP,
+              index: 0,
+              safetyRatings: [],
             },
-            finishReason: FinishReason.STOP,
-            index: 0,
-            safetyRatings: [],
-          },
-        ],
-      } as unknown as GenerateContentResponse;
+          ],
+        },
+      } as unknown as GenerateContentResult;
       const modelName = "gpt-4";
       const result = transformGeminiResponseToOpenAI(geminiResult, modelName);
 
@@ -36,23 +38,27 @@ describe("Gemini to OpenAI Adapter", () => {
 
   describe("streamGeminiToOpenAI", () => {
     it("should transform a Gemini stream into an OpenAI SSE stream", async () => {
-      async function* createMockStream(): AsyncGenerator<GenerateContentResponse> {
+      async function* createMockStream(): AsyncGenerator<GenerateContentResult> {
         yield {
-          candidates: [
-            {
-              index: 0,
-              content: { role: "model", parts: [{ text: "Hello" }] },
-            },
-          ],
-        } as unknown as GenerateContentResponse;
+          response: {
+            candidates: [
+              {
+                index: 0,
+                content: { role: "model", parts: [{ text: "Hello" }] },
+              },
+            ],
+          },
+        } as unknown as GenerateContentResult;
         yield {
-          candidates: [
-            {
-              index: 0,
-              content: { role: "model", parts: [{ text: " World" }] },
-            },
-          ],
-        } as unknown as GenerateContentResponse;
+          response: {
+            candidates: [
+              {
+                index: 0,
+                content: { role: "model", parts: [{ text: " World" }] },
+              },
+            ],
+          },
+        } as unknown as GenerateContentResult;
       }
 
       const geminiStream = createMockStream();

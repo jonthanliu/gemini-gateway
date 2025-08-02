@@ -16,14 +16,14 @@ describe("OpenAI to Gemini Adapter", () => {
       stream: false,
     };
 
-    const geminiRequest = transformRequest(openaiRequest.model, openaiRequest);
+    const geminiRequest = transformRequest(openaiRequest);
 
     expect(geminiRequest.contents).toEqual([
       { role: "user", parts: [{ text: "You are a helpful assistant." }] },
       { role: "user", parts: [{ text: "Hello!" }] },
     ]);
 
-    expect(geminiRequest.config).toEqual({
+    expect(geminiRequest.generationConfig).toEqual({
       temperature: 0.8,
       topP: 0.9,
       maxOutputTokens: 150,

@@ -1,11 +1,11 @@
 import type * as Anthropic from "@anthropic-ai/sdk/resources/messages";
 import {
-  GenerateContentParameters,
-  GenerateContentResponse,
+  FunctionDeclarationSchema,
+  GenerateContentRequest,
+  GenerateContentResult,
   Part,
-  Schema,
-  Type,
-} from "@google/genai";
+  SchemaType,
+} from "@google/generative-ai";
 
 // --- Anthropic Response Types ---
 interface AnthropicMessage {
@@ -49,18 +49,16 @@ function cleanSchema<T>(schema: T): T {
 export function transformRequest(
   model: string,
   request: Anthropic.MessageCreateParams
-): GenerateContentParameters {
-  const geminiRequest: GenerateContentParameters = {
-    model: model,
+): GenerateContentRequest {
+  const geminiRequest: GenerateContentRequest = {
     contents: [],
-    config: {},
   };
 
   if (request.system) {
     const systemText = Array.isArray(request.system)
       ? request.system.map((s) => s.text).join("\n")
       : request.system;
-    geminiRequest.config!.systemInstruction = {
+    geminiRequest.systemInstruction = {
       role: "user",
       parts: [{ text: systemText }],
     };
@@ -113,35 +111,53 @@ export function transformRequest(
           name: tool.name,
           description: tool.description,
           parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: cleanedProperties,
             required: tool.input_schema.required,
-          } as Schema,
+          } as FunctionDeclarationSchema,
         };
       });
     if (functionDeclarations.length > 0) {
-      geminiRequest.config!.tools = [{ functionDeclarations }];
+      geminiRequest.tools = [{ functionDeclarations }];
     }
   }
 
   if (request.max_tokens)
-    geminiRequest.config!.maxOutputTokens = request.max_tokens;
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      maxOutputTokens: request.max_tokens,
+    };
   if (request.temperature)
-    geminiRequest.config!.temperature = request.temperature;
-  if (request.top_p) geminiRequest.config!.topP = request.top_p;
-  if (request.top_k) geminiRequest.config!.topK = request.top_k;
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      temperature: request.temperature,
+    };
+  if (request.top_p)
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      topP: request.top_p,
+    };
+  if (request.top_k)
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      topK: request.top_k,
+    };
   if (request.stop_sequences)
-    geminiRequest.config!.stopSequences = request.stop_sequences;
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      stopSequences: request.stop_sequences,
+    };
 
   return geminiRequest;
 }
 
 export function transformResponse(
-  geminiResult: GenerateContentResponse,
+  geminiResult: GenerateContentResult,
   model: string
 ): AnthropicMessage {
   const content: AnthropicMessage["content"] = [];
-  const geminiParts = geminiResult.candidates?.[0]?.content?.parts || [];
+  const geminiParts =
+    geminiResult.response.candidates?.[0]?.content?.parts || [];
 
   for (const part of geminiParts) {
     if (part.text) {
@@ -164,8 +180,9 @@ export function transformResponse(
     model: model,
     stop_reason: "end_turn",
     usage: {
-      input_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
-      output_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
+      input_tokens: geminiResult.response.usageMetadata?.promptTokenCount || 0,
+      output_tokens:
+        geminiResult.response.usageMetadata?.candidatesTokenCount || 0,
     },
   } as AnthropicMessage;
 
@@ -173,10 +190,11 @@ export function transformResponse(
 }
 
 export async function* transformStream(
-  geminiStream: AsyncGenerator<GenerateContentResponse>
+  geminiStream: AsyncGenerator<GenerateContentResult>
 ): AsyncGenerator<string> {
   for await (const geminiChunk of geminiStream) {
-    const text = geminiChunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text =
+      geminiChunk.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (text) {
       const anthropicChunk = {
         type: "content_block_delta",

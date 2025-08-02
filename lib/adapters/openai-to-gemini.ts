@@ -1,12 +1,10 @@
-import type {
+import {
   Content,
-  FunctionCall,
-  GenerateContentParameters,
-  GenerateContentResponse,
-  GenerationConfig,
+  FunctionDeclarationSchema,
+  GenerateContentRequest,
+  GenerateContentResult,
   Part,
-  Tool,
-} from "@google/genai";
+} from "@google/generative-ai";
 import {
   OpenAIChatCompletion,
   OpenAIChatCompletionRequest,
@@ -14,11 +12,6 @@ import {
   OpenAICompletionChoice,
   OpenAIUsage,
 } from "../types/openai-types";
-
-// Local interface to extend GenerationConfig for type safety
-interface ExtendedGenerationConfig extends GenerationConfig {
-  tools?: Tool[];
-}
 
 // OpenAI's streaming delta for tool calls has a unique structure.
 interface OpenAIToolCallDelta {
@@ -48,11 +41,13 @@ function openAIMessageToGeminiContent(message: OpenAIChatMessage): Content {
   }
 
   if (tool_calls) {
-    const functionCalls: FunctionCall[] = tool_calls.map((toolCall) => ({
-      name: toolCall.function.name,
-      args: JSON.parse(toolCall.function.arguments),
+    const functionCalls = tool_calls.map((toolCall) => ({
+      functionCall: {
+        name: toolCall.function.name,
+        args: JSON.parse(toolCall.function.arguments),
+      },
     }));
-    parts.push(...functionCalls.map((fc) => ({ functionCall: fc })));
+    parts.push(...functionCalls);
   }
 
   return {
@@ -62,47 +57,60 @@ function openAIMessageToGeminiContent(message: OpenAIChatMessage): Content {
 }
 
 export function transformRequest(
-  model: string,
   openaiRequest: OpenAIChatCompletionRequest
-): GenerateContentParameters {
+): GenerateContentRequest {
   const geminiContents: Content[] = openaiRequest.messages.map(
     openAIMessageToGeminiContent
   );
 
-  const generationConfig: ExtendedGenerationConfig = {};
+  const geminiRequest: GenerateContentRequest = {
+    contents: geminiContents,
+  };
+
   if (openaiRequest.temperature)
-    generationConfig.temperature = openaiRequest.temperature;
-  if (openaiRequest.top_p) generationConfig.topP = openaiRequest.top_p;
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      temperature: openaiRequest.temperature,
+    };
+  if (openaiRequest.top_p)
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      topP: openaiRequest.top_p,
+    };
   if (openaiRequest.max_tokens)
-    generationConfig.maxOutputTokens = openaiRequest.max_tokens;
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      maxOutputTokens: openaiRequest.max_tokens,
+    };
   if (openaiRequest.stop) {
-    if (Array.isArray(openaiRequest.stop)) {
-      generationConfig.stopSequences = openaiRequest.stop;
-    } else {
-      generationConfig.stopSequences = [openaiRequest.stop];
-    }
+    geminiRequest.generationConfig = {
+      ...geminiRequest.generationConfig,
+      stopSequences: Array.isArray(openaiRequest.stop)
+        ? openaiRequest.stop
+        : [openaiRequest.stop],
+    };
   }
 
   if (openaiRequest.tools) {
-    generationConfig.tools = [
-      {
-        functionDeclarations: openaiRequest.tools.map((t) => t.function),
-      },
-    ];
+    geminiRequest.tools = openaiRequest.tools.map((tool) => ({
+      functionDeclarations: [
+        {
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: tool.function.parameters as FunctionDeclarationSchema, // 强制转换为 FunctionDeclarationSchema
+        },
+      ],
+    }));
   }
 
-  return {
-    model,
-    contents: geminiContents,
-    config: generationConfig,
-  };
+  return geminiRequest;
 }
 
 export function transformResponse(
-  geminiResult: GenerateContentResponse,
+  geminiResult: GenerateContentResult,
   model: string
 ): OpenAIChatCompletion {
-  const firstCandidate = geminiResult.candidates?.[0];
+  const firstCandidate = geminiResult.response.candidates?.[0];
   const firstPart = firstCandidate?.content?.parts?.[0];
 
   const message: OpenAIChatMessage = { role: "assistant", content: null };
@@ -117,7 +125,7 @@ export function transformResponse(
         id: `call_${Date.now()}`,
         type: "function",
         function: {
-          name: firstPart.functionCall.name ?? "",
+          name: firstPart.functionCall.name,
           arguments: JSON.stringify(firstPart.functionCall.args),
         },
       },
@@ -131,9 +139,10 @@ export function transformResponse(
   };
 
   const usage: OpenAIUsage = {
-    prompt_tokens: geminiResult.usageMetadata?.promptTokenCount || 0,
-    completion_tokens: geminiResult.usageMetadata?.candidatesTokenCount || 0,
-    total_tokens: geminiResult.usageMetadata?.totalTokenCount || 0,
+    prompt_tokens: geminiResult.response.usageMetadata?.promptTokenCount || 0,
+    completion_tokens:
+      geminiResult.response.usageMetadata?.candidatesTokenCount || 0,
+    total_tokens: geminiResult.response.usageMetadata?.totalTokenCount || 0,
   };
 
   return {
@@ -147,11 +156,11 @@ export function transformResponse(
 }
 
 export async function* transformStream(
-  geminiStream: AsyncGenerator<GenerateContentResponse>,
+  geminiStream: AsyncGenerator<GenerateContentResult>,
   model: string
 ): AsyncGenerator<string> {
   for await (const geminiChunk of geminiStream) {
-    const firstCandidate = geminiChunk.candidates?.[0];
+    const firstCandidate = geminiChunk.response.candidates?.[0];
     const firstPart = firstCandidate?.content?.parts?.[0];
 
     const delta: Partial<OpenAIChatMessage> & {
@@ -161,15 +170,13 @@ export async function* transformStream(
       delta.content = firstPart.text;
     }
     if (firstPart?.functionCall) {
-      // Note: The streaming format for tool calls in OpenAI is an array.
-      // We construct it to match the expected client-side structure.
       delta.tool_calls = [
         {
           index: 0,
-          id: `call_${Date.now()}`, // A temporary ID for the call
+          id: `call_${Date.now()}`,
           type: "function",
           function: {
-            name: firstPart.functionCall.name ?? "",
+            name: firstPart.functionCall.name,
             arguments: JSON.stringify(firstPart.functionCall.args),
           },
         },
